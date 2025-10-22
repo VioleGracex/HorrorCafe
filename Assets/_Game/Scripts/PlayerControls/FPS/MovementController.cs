@@ -1,0 +1,154 @@
+using UnityEngine;
+
+namespace Ouiki.FPS
+{
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(CapsuleCollider))]
+    public class MovementController : MonoBehaviour
+    {
+        private Rigidbody rb;
+        private CapsuleCollider standingCollider;
+        private CapsuleCollider crouchCollider;
+        private PlayerManager manager;
+        private PlayerInputHandler input;
+        private PlayerStateManager state;
+        private CooldownManager cooldown;
+
+        public float walkSpeed = 5f;
+        public float sprintSpeed = 8f;
+        public float crouchSpeed = 2.5f;
+        public float jumpPower = 5f;
+        public CapsuleCollider standingCapsule;
+        public CapsuleCollider crouchCapsule;
+        public Transform playerVisual;
+        public float crouchVisualScaleY = 0.5f;
+        public float crouchTransitionSpeed = 8f;
+
+        private bool isGrounded;
+        private float lastGroundCheckDistance = 0.3f;
+        private Vector3 lastGroundCheckOrigin;
+        private Vector3 lastGroundCheckDirection;
+        private float targetVisualYScale = 1f;
+        private bool _initialized = false;
+
+        public void Init(PlayerManager mgr)
+        {
+            manager = mgr;
+            input = manager.inputHandler;
+            state = manager.stateManager;
+            cooldown = manager.cooldownManager;
+            rb = GetComponent<Rigidbody>();
+
+            standingCollider = standingCapsule;
+            crouchCollider = crouchCapsule;
+
+            EnableCollider(true);
+            if (playerVisual) playerVisual.localScale = new Vector3(1, 1, 1);
+            targetVisualYScale = 1f;
+            _initialized = true;
+        }
+
+        private void FixedUpdate()
+        {
+            if (!_initialized) return;
+            if (!state.CanDo(PlayerAction.Move)) return;
+
+            float speed = walkSpeed;
+            if (state.CurrentState == PlayerState.Sprinting && cooldown.CanSprint) speed = sprintSpeed;
+            if (state.CurrentState == PlayerState.Crouching) speed = crouchSpeed;
+
+            Vector3 moveInput = new Vector3(input.MoveInput.Value.x, 0f, input.MoveInput.Value.y);
+            Vector3 moveDir = transform.TransformDirection(moveInput);
+
+            rb.MovePosition(rb.position + moveDir * speed * Time.fixedDeltaTime);
+
+            if (state.CanDo(PlayerAction.Jump) && input.JumpPressed.Value && isGrounded && cooldown.CanJump)
+            {
+                rb.AddForce(Vector3.up * jumpPower, ForceMode.Impulse);
+                state.StartJump();
+                cooldown.StartJumpCooldown();
+            }
+
+            cooldown.isSprinting = state.CurrentState == PlayerState.Sprinting && input.SprintHeld.Value && cooldown.CanSprint;
+            cooldown.TickStamina(Time.fixedDeltaTime);
+
+            if (playerVisual)
+            {
+                float currentScaleY = playerVisual.localScale.y;
+                float newScaleY = Mathf.Lerp(currentScaleY, targetVisualYScale, Time.fixedDeltaTime * crouchTransitionSpeed);
+                playerVisual.localScale = new Vector3(1, newScaleY, 1);
+            }
+        }
+
+        private void Update()
+        {
+            if (!_initialized) return;
+            CheckGround();
+
+            if (state.IsKnockedOut)
+                return;
+
+            if (input.CrouchPressed.Value)
+            {
+                input.ResetCrouch();
+                if (state.CurrentState != PlayerState.Crouching)
+                {
+                    state.ToggleCrouch();
+                    EnableCollider(false);
+                    targetVisualYScale = crouchVisualScaleY;
+                }
+                else
+                {
+                    if (CanStandUp())
+                    {
+                        state.ToggleCrouch();
+                        EnableCollider(true);
+                        targetVisualYScale = 1f;
+                    }
+                }
+            }
+
+            if (input.SprintHeld.Value && state.CanDo(PlayerAction.Sprint) && cooldown.CanSprint)
+                state.StartSprint();
+            else if ((!input.SprintHeld.Value || !cooldown.CanSprint) && state.CurrentState == PlayerState.Sprinting)
+                state.StopSprint();
+
+            if (isGrounded && state.CurrentState == PlayerState.Jumping)
+                state.Land();
+        }
+
+        private void EnableCollider(bool standing)
+        {
+            if (standingCollider && crouchCollider)
+            {
+                standingCollider.enabled = standing;
+                crouchCollider.enabled = !standing;
+            }
+        }
+
+        private void CheckGround()
+        {
+            lastGroundCheckOrigin = transform.position + Vector3.up * 0.1f;
+            lastGroundCheckDirection = Vector3.down;
+            CapsuleCollider activeCol = standingCollider.enabled ? standingCollider : crouchCollider;
+            float checkDistance = activeCol.height / 2f + lastGroundCheckDistance;
+            isGrounded = Physics.Raycast(lastGroundCheckOrigin, lastGroundCheckDirection, checkDistance);
+        }
+
+        private bool CanStandUp()
+        {
+            if (!standingCollider || !crouchCollider) return true;
+            float checkDistance = standingCollider.height - crouchCollider.height;
+            Vector3 headPos = transform.position + Vector3.up * crouchCollider.height;
+            return !Physics.Raycast(headPos, Vector3.up, checkDistance);
+        }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = isGrounded ? Color.green : Color.red;
+            Gizmos.DrawLine(lastGroundCheckOrigin, lastGroundCheckOrigin + lastGroundCheckDirection * lastGroundCheckDistance);
+            if (isGrounded)
+                Gizmos.DrawSphere(lastGroundCheckOrigin + lastGroundCheckDirection * lastGroundCheckDistance, 0.05f);
+        }
+    }
+}
