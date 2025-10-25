@@ -11,6 +11,8 @@ namespace Ouiki.FPS
         public ObservableValue<bool> SprintHeld = new ObservableValue<bool>();
         public ObservableValue<bool> CrouchPressed = new ObservableValue<bool>();
         public ObservableValue<bool> ZoomHeld = new ObservableValue<bool>();
+        public ObservableValue<bool> InteractPressed = new ObservableValue<bool>();
+        public ObservableValue<float> Scroll = new ObservableValue<float>();
 
         private PlayerControls controls;
 
@@ -35,11 +37,20 @@ namespace Ouiki.FPS
 
             controls.Player.Zoom.performed += ctx => ZoomHeld.Value = true;
             controls.Player.Zoom.canceled += ctx => ZoomHeld.Value = false;
+
+            controls.Player.Interact.performed += ctx => InteractPressed.Value = true;
+            controls.Player.Interact.canceled += ctx => InteractPressed.Value = false;
+
+            controls.Player.Scroll.performed += ctx => Scroll.Value = ctx.ReadValue<float>();
+            controls.Player.Scroll.canceled += ctx => Scroll.Value = 0f;
+
+            controls.Enable();
         }
 
         private void OnEnable() => controls?.Enable();
         private void OnDisable() => controls?.Disable();
 
         public void ResetCrouch() => CrouchPressed.Value = false;
+        public void ResetInteract() => InteractPressed.Value = false;
     }
 }

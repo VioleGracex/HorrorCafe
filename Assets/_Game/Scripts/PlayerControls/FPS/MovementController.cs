@@ -21,14 +21,11 @@ namespace Ouiki.FPS
         public CapsuleCollider standingCapsule;
         public CapsuleCollider crouchCapsule;
         public Transform playerVisual;
-        public float crouchVisualScaleY = 0.5f;
-        public float crouchTransitionSpeed = 8f;
 
         private bool isGrounded;
         private float lastGroundCheckDistance = 0.3f;
         private Vector3 lastGroundCheckOrigin;
         private Vector3 lastGroundCheckDirection;
-        private float targetVisualYScale = 1f;
         private bool _initialized = false;
 
         public void Init(PlayerManager mgr)
@@ -43,8 +40,6 @@ namespace Ouiki.FPS
             crouchCollider = crouchCapsule;
 
             EnableCollider(true);
-            if (playerVisual) playerVisual.localScale = new Vector3(1, 1, 1);
-            targetVisualYScale = 1f;
             _initialized = true;
         }
 
@@ -60,24 +55,18 @@ namespace Ouiki.FPS
             Vector3 moveInput = new Vector3(input.MoveInput.Value.x, 0f, input.MoveInput.Value.y);
             Vector3 moveDir = transform.TransformDirection(moveInput);
 
-            rb.MovePosition(rb.position + moveDir * speed * Time.fixedDeltaTime);
+            Vector3 velocity = new Vector3(moveDir.x * speed, rb.linearVelocity.y, moveDir.z * speed);
+            rb.linearVelocity = velocity;
 
             if (state.CanDo(PlayerAction.Jump) && input.JumpPressed.Value && isGrounded && cooldown.CanJump)
             {
-                rb.AddForce(Vector3.up * jumpPower, ForceMode.Impulse);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpPower, rb.linearVelocity.z);
                 state.StartJump();
                 cooldown.StartJumpCooldown();
             }
 
             cooldown.isSprinting = state.CurrentState == PlayerState.Sprinting && input.SprintHeld.Value && cooldown.CanSprint;
             cooldown.TickStamina(Time.fixedDeltaTime);
-
-            if (playerVisual)
-            {
-                float currentScaleY = playerVisual.localScale.y;
-                float newScaleY = Mathf.Lerp(currentScaleY, targetVisualYScale, Time.fixedDeltaTime * crouchTransitionSpeed);
-                playerVisual.localScale = new Vector3(1, newScaleY, 1);
-            }
         }
 
         private void Update()
@@ -95,7 +84,6 @@ namespace Ouiki.FPS
                 {
                     state.ToggleCrouch();
                     EnableCollider(false);
-                    targetVisualYScale = crouchVisualScaleY;
                 }
                 else
                 {
@@ -103,7 +91,6 @@ namespace Ouiki.FPS
                     {
                         state.ToggleCrouch();
                         EnableCollider(true);
-                        targetVisualYScale = 1f;
                     }
                 }
             }

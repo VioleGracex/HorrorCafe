@@ -10,6 +10,7 @@ namespace Ouiki.FPS
         public PlayerStateManager stateManager;
         public PlayerUIController uiController;
         public CooldownManager cooldownManager;
+        public PlayerInteractionController interactionController;
 
         private void Awake()
         {
@@ -18,6 +19,7 @@ namespace Ouiki.FPS
             cooldownManager.Init();
             movementController.Init(this);
             cameraController.Init(this);
+            interactionController.inputHandler = inputHandler;
             uiController.Init(this);
         }
     }
