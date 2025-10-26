@@ -1,6 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
 using Ouiki.FPS;
+using Ouiki.Items;
 
 namespace Ouiki.Items
 {
@@ -16,7 +17,7 @@ namespace Ouiki.Items
 
         public void AnimateFill(float duration)
         {
-            if (coffeeVisual) return;
+            if (coffeeVisual == null) return;
 
             coffeeVisual.SetActive(true);
             Renderer rend = coffeeVisual.GetComponent<Renderer>();

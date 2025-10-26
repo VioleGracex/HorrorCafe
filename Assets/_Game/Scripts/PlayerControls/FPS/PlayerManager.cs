@@ -11,6 +11,7 @@ namespace Ouiki.FPS
         public PlayerUIController uiController;
         public CooldownManager cooldownManager;
         public PlayerInteractionController interactionController;
+        public PlayerAnimationController animationController;
 
         private void Awake()
         {

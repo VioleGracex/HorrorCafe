@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Ouiki.FPS
 {
-    public class CoffeeMachineSlot : PlaceableSlot
+    public class CoffeeMachineSlot : PickUpOnlySlot
     {
         public override bool CanPlace(PickableItem item)
         {

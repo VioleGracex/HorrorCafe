@@ -9,9 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2054542908066087299}
-  - component: {fileID: 4120449344197583972}
   - component: {fileID: 8537221600914212165}
-  - component: {fileID: 1450036978324543057}
   m_Layer: 0
   m_Name: CoffeeMachineSlot
   m_TagString: Untagged
@@ -28,33 +26,12 @@ Transform:
   m_GameObject: {fileID: 1171884367083371067}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.00216, y: -0.001086, z: 0.000159}
+  m_LocalPosition: {x: 0.00216, y: -0.00119, z: 0.000159}
   m_LocalScale: {x: 0.001, y: 0.0010000004, z: 0.0010000004}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 351945741727123429}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &4120449344197583972
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1171884367083371067}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &8537221600914212165
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -68,27 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ouiki.FPS.CoffeeMachineSlot
   snapPoint: {fileID: 2054542908066087299}
---- !u!135 &1450036978324543057
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1171884367083371067}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 2.5
-  m_Center: {x: 0, y: 0, z: 0}
+  ejectIfBlocked: 0
 --- !u!1 &5973471618207518411
 GameObject:
   m_ObjectHideFlags: 0
@@ -104,7 +61,8 @@ GameObject:
   - component: {fileID: 7683309123851221734}
   - component: {fileID: 7422026831933091502}
   - component: {fileID: 2876914882657537071}
-  m_Layer: 0
+  - component: {fileID: 3833705978579636904}
+  m_Layer: 6
   m_Name: standalonecoffeemachine2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -272,8 +230,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ouiki.Items.CoffeeMachine
   cupSlot: {fileID: 8537221600914212165}
-  fillTime: 3
+  fillTime: 13
   fillSound: {fileID: 949157957203974193}
+--- !u!135 &3833705978579636904
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973471618207518411}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.0022
+  m_Center: {x: -0.001, y: 0, z: 0}
 --- !u!1 &6379296964403139634
 GameObject:
   m_ObjectHideFlags: 0

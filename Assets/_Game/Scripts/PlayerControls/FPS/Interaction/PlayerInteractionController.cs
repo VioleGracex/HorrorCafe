@@ -18,11 +18,8 @@ namespace Ouiki.FPS
         public Vector3 holdOffset = Vector3.zero;
 
         [Header("Scroll Settings")]
-        [Tooltip("Minimum distance you can hold an item from the camera.")]
         public float MinHoldDistance = 0.5f;
-        [Tooltip("Maximum distance you can hold an item from the camera.")]
         public float MaxHoldDistance = 4f;
-        [Tooltip("How much scrolling moves the held item.")]
         public float ScrollSensitivity = 0.5f;
 
         private float heldItemDistance = 0f;
@@ -30,24 +27,15 @@ namespace Ouiki.FPS
         private PickableItem heldItem;
         public bool HasItem => heldItem != null;
         public bool IsLookingAtInteractable { get; private set; }
-        public IInteractable LookedAtInteractable { get; private set; } // for UI
+        public IInteractable LookedAtInteractable { get; private set; }
 
         void Update()
         {
-            // Always allow dropping with interact when holding, regardless of raycast
-            if (HasItem && inputHandler.InteractPressed.Value)
-            {
-                inputHandler.ResetInteract();
-                TryDrop();
-                return;
-            }
-
             IsLookingAtInteractable = false;
             LookedAtInteractable = null;
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
             RaycastHit hit;
 
-            // Update held item position (always centered on ray)
             if (heldItem != null)
             {
                 float scroll = inputHandler.Scroll.Value;
@@ -63,32 +51,35 @@ namespace Ouiki.FPS
                 heldItem.HoldAt(targetPos, targetRot);
             }
 
-            // Raycast for interactable objects
+            bool didInteract = false;
+
             if (Physics.Raycast(ray, out hit, interactDistance, interactableLayerMask))
             {
                 var interactable = hit.collider.GetComponent<IInteractable>();
-                if (interactable is PickableItem pickable && pickable.IsInteractable)
+                IsLookingAtInteractable = interactable != null && interactable.IsInteractable;
+                LookedAtInteractable = interactable;
+
+                if (IsLookingAtInteractable && inputHandler.InteractPressed.Value)
                 {
-                    IsLookingAtInteractable = true;
-                    LookedAtInteractable = interactable;
-                    if (!HasItem && inputHandler.InteractPressed.Value)
+                    inputHandler.ResetInteract();
+
+                    if (interactable is PickableItem pickable && !HasItem)
                     {
-                        inputHandler.ResetInteract();
                         TryPickUp(pickable, hit.distance);
-                        return;
+                        didInteract = true;
                     }
-                }
-                else if (interactable != null && interactable.IsInteractable)
-                {
-                    IsLookingAtInteractable = true;
-                    LookedAtInteractable = interactable;
-                    if (inputHandler.InteractPressed.Value)
+                    else
                     {
-                        inputHandler.ResetInteract();
                         interactable.OnInteract(this);
-                        return;
+                        didInteract = true;
                     }
                 }
+            }
+
+            if (!didInteract && HasItem && inputHandler.InteractPressed.Value)
+            {
+                inputHandler.ResetInteract();
+                TryDrop();
             }
         }
 
@@ -96,11 +87,8 @@ namespace Ouiki.FPS
         {
             if (HasItem || !item.IsInteractable) return;
             heldItem = item;
-
-            // If a specific pickup distance was provided (from raycast), use it, else calculate as before
             float distance = pickupDistance ?? Vector3.Distance(playerCamera.transform.position, item.transform.position);
             heldItemDistance = Mathf.Clamp(distance, MinHoldDistance, MaxHoldDistance);
-
             item.OnPickUp();
         }
 
@@ -114,6 +102,23 @@ namespace Ouiki.FPS
         public IInteractable GetLookedAtInteractable()
         {
             return LookedAtInteractable;
+        }
+
+        public PickableItem GetHeldItem()
+        {
+            return heldItem;
+        }
+
+        public void ForceDrop(PickableItem item)
+        {
+            if (heldItem == item)
+            {
+                heldItem = null;
+            }
+        }
+
+        public void TakeDamage()
+        {
         }
 
         void OnDrawGizmos()

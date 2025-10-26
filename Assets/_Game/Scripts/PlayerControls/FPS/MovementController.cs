@@ -28,6 +28,8 @@ namespace Ouiki.FPS
         private Vector3 lastGroundCheckDirection;
         private bool _initialized = false;
 
+        private bool _lastIsWalking = false;
+
         public void Init(PlayerManager mgr)
         {
             manager = mgr;
@@ -67,6 +69,13 @@ namespace Ouiki.FPS
 
             cooldown.isSprinting = state.CurrentState == PlayerState.Sprinting && input.SprintHeld.Value && cooldown.CanSprint;
             cooldown.TickStamina(Time.fixedDeltaTime);
+
+            bool isWalking = moveInput.sqrMagnitude > 0.01f && state.CurrentState == PlayerState.Standing;
+            if (isWalking != _lastIsWalking)
+            {
+                state.UpdateWalkAnim(isWalking);
+                _lastIsWalking = isWalking;
+            }
         }
 
         private void Update()

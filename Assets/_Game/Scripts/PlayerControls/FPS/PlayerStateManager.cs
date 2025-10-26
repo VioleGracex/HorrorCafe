@@ -54,6 +54,8 @@ namespace Ouiki.FPS
     public class PlayerStateManager : MonoBehaviour
     {
         public PlayerState CurrentState { get; private set; } = PlayerState.Standing;
+        public PlayerAnimationController animationController;
+        private bool _lastIsWalking = false;
 
         private readonly Dictionary<PlayerState, PlayerCapabilities> stateCapabilities = new()
         {
@@ -138,6 +140,18 @@ namespace Ouiki.FPS
             return false;
         }
 
+        public void UpdateWalkAnim(bool isWalking)
+        {
+            if (animationController != null && (CurrentState == PlayerState.Standing))
+            {
+                if (_lastIsWalking != isWalking)
+                {
+                    animationController.PlayStateAnimation(CurrentState, isWalking);
+                    _lastIsWalking = isWalking;
+                }
+            }
+        }
+
         public void KnockOut() => SetState(PlayerState.KnockedOut);
         public void Recover() => SetState(PlayerState.Standing);
         public void StartHide() => SetState(PlayerState.Hiding);
@@ -180,6 +194,13 @@ namespace Ouiki.FPS
         public void SetState(PlayerState newState)
         {
             CurrentState = newState;
+            if (animationController != null)
+            {
+                bool isWalking = false;
+                if (CurrentState == PlayerState.Standing)
+                    isWalking = _lastIsWalking;
+                animationController.PlayStateAnimation(newState, isWalking);
+            }
         }
     }
 }
