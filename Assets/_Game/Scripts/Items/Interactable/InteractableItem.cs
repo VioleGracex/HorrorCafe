@@ -1,7 +1,8 @@
+using Ouiki.FPS;
 using Ouiki.Interfaces;
 using UnityEngine;
 
-namespace Ouiki.FPS
+namespace Ouiki.Items
 {
     [RequireComponent(typeof(Collider))]
     public class InteractableItem : MonoBehaviour, IInteractable

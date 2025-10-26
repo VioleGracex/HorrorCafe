@@ -1,4 +1,5 @@
 using Ouiki.Interfaces;
+using Ouiki.Items;
 using UnityEngine;
 
 namespace Ouiki.FPS

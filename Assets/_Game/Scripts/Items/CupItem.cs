@@ -12,7 +12,7 @@ namespace Ouiki.Items
         public bool IsFilled => isFilled;
         public GameObject coffeeVisual;
 
-        private PlaceableSlot currentSlot;
+        private BaseSlot currentSlot;
 
         public void AnimateFill(float duration)
         {
@@ -49,7 +49,7 @@ namespace Ouiki.Items
                 coffeeVisual.SetActive(isFilled);
         }
 
-        public override void OnPlacedInSlot(PlaceableSlot slot)
+        public override void OnPlacedInSlot(BaseSlot slot)
         {
             base.OnPlacedInSlot(slot);
             currentSlot = slot;
@@ -60,7 +60,7 @@ namespace Ouiki.Items
             }
         }
 
-        public override void OnRemovedFromSlot(PlaceableSlot slot)
+        public override void OnRemovedFromSlot(BaseSlot slot)
         {
             base.OnRemovedFromSlot(slot);
             currentSlot = null;

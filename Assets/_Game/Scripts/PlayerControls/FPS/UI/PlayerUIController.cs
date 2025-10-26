@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using DG.Tweening;
 using TMPro;
 using Ouiki.Interfaces;
+using Ouiki.Items;
 
 namespace Ouiki.FPS
 {
@@ -41,13 +42,6 @@ namespace Ouiki.FPS
         public Color fullColor = Color.green;
         public Color regenColor = new Color(0f, 1f, 0f, 0.3f);
 
-        void Start()
-        {
-            // Optionally clear item texts at start
-            if (itemLabelText) itemLabelText.text = "";
-            if (itemActionText) itemActionText.text = "";
-        }
-
         public void Init(PlayerManager mgr)
         {
             manager = mgr;
@@ -61,6 +55,9 @@ namespace Ouiki.FPS
                 staminaBarWidth = staminaBar.rectTransform.sizeDelta.x;
                 staminaBarHeight = staminaBar.rectTransform.sizeDelta.y;
             }
+
+            SetTextAndActive(itemLabelText, "");
+            SetTextAndActive(itemActionText, "");
         }
 
         void Update()
@@ -142,36 +139,46 @@ namespace Ouiki.FPS
             if (itemLabelText == null || itemActionText == null || interactionController == null)
                 return;
 
-            // Default: Hide texts
-            itemLabelText.text = "";
-            itemActionText.text = "";
+            string label = "";
+            string action = "";
 
-            if (!interactionController.IsLookingAtInteractable || state.IsKnockedOut)
-                return;
+            if (interactionController.IsLookingAtInteractable && !state.IsKnockedOut)
+            {
+                var lookedAt = interactionController.GetLookedAtInteractable();
 
-            var lookedAt = interactionController.GetLookedAtInteractable();
+                if (lookedAt is ILabel labelProvider)
+                {
+                    label = labelProvider.Label;
+                }
+                else
+                {
+                    label = lookedAt?.GetType().Name ?? "";
+                }
 
-            if (lookedAt is ILabel labelProvider)
-            {
-                itemLabelText.text = labelProvider.Label;
-            }
-            else
-            {
-                itemLabelText.text = lookedAt?.GetType().Name ?? "";
+                if (lookedAt is ICommand commandProvider && !string.IsNullOrEmpty(commandProvider.ActionName))
+                {
+                    action = commandProvider.ActionName;
+                }
+                else if (lookedAt is PickableItem)
+                {
+                    action = "[E] Grab";
+                }
+                else if (lookedAt != null)
+                {
+                    action = "[E] Interact";
+                }
             }
 
-            if (lookedAt is ICommand commandProvider && !string.IsNullOrEmpty(commandProvider.ActionName))
-            {
-                itemActionText.text = commandProvider.ActionName;
-            }
-            else if (lookedAt is PickableItem)
-            {
-                itemActionText.text = "[E] Grab";
-            }
-            else if (lookedAt != null)
-            {
-                itemActionText.text = "[E] Interact";
-            }
+            SetTextAndActive(itemLabelText, label);
+            SetTextAndActive(itemActionText, action);
+        }
+
+        private void SetTextAndActive(TMP_Text txt, string value)
+        {
+            if (txt == null) return;
+            txt.text = value;
+            if (txt.gameObject.activeSelf != !string.IsNullOrEmpty(value))
+                txt.gameObject.SetActive(!string.IsNullOrEmpty(value));
         }
     }
 }

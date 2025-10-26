@@ -1,8 +1,9 @@
 using DG.Tweening;
+using Ouiki.FPS;
 using Ouiki.Interfaces;
 using UnityEngine;
 
-namespace Ouiki.FPS
+namespace Ouiki.Items
 {
     [RequireComponent(typeof(Collider))]
     [RequireComponent(typeof(Rigidbody))]
@@ -68,9 +69,8 @@ namespace Ouiki.FPS
             rb.MoveRotation(rot);
         }
 
-        public virtual void OnPlacedInSlot(PlaceableSlot slot)
+        public virtual void OnPlacedInSlot(BaseSlot slot)
         {
-            // Kill possible active tweens so they don't interfere
             if (moveTween != null && moveTween.IsActive()) moveTween.Kill();
             if (rotateTween != null && rotateTween.IsActive()) rotateTween.Kill();
 
@@ -84,7 +84,7 @@ namespace Ouiki.FPS
                 col.enabled = true; 
         }
 
-        public virtual void OnRemovedFromSlot(PlaceableSlot slot)
+        public virtual void OnRemovedFromSlot(BaseSlot slot)
         {
             if (moveTween != null && moveTween.IsActive()) moveTween.Kill();
             if (rotateTween != null && rotateTween.IsActive()) rotateTween.Kill();

@@ -1,28 +1,26 @@
 using UnityEngine;
+using Ouiki.FPS;
 
-namespace Ouiki.FPS
+namespace Ouiki.Items
 {
     [RequireComponent(typeof(BoxCollider))]
-    public class PlaceableSlot : MonoBehaviour
+    public class PlaceableSlot : BaseSlot
     {
-        public Transform snapPoint;
-        public bool IsOccupied { get; private set; }
         private PickableItem currentItem;
-
         private BoxCollider triggerArea;
 
         void Awake()
         {
             triggerArea = GetComponent<BoxCollider>();
-            triggerArea.isTrigger = true; 
+            triggerArea.isTrigger = true;
         }
 
-        public virtual bool CanPlace(PickableItem item)
+        public override bool CanPlace(PickableItem item)
         {
             return !IsOccupied && item != null;
         }
 
-        public virtual void Place(PickableItem item)
+        public override void Place(PickableItem item)
         {
             if (CanPlace(item))
             {
@@ -32,7 +30,7 @@ namespace Ouiki.FPS
             }
         }
 
-        public virtual void Remove()
+        public override void Remove()
         {
             currentItem = null;
             IsOccupied = false;

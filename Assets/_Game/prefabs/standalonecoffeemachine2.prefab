@@ -100,10 +100,10 @@ GameObject:
   - component: {fileID: 351945741727123429}
   - component: {fileID: 8149744112684476585}
   - component: {fileID: 5220150979413680428}
-  - component: {fileID: 4418467800674524398}
   - component: {fileID: 4259803144007475053}
   - component: {fileID: 7683309123851221734}
   - component: {fileID: 7422026831933091502}
+  - component: {fileID: 2876914882657537071}
   m_Layer: 0
   m_Name: standalonecoffeemachine2
   m_TagString: Untagged
@@ -119,7 +119,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5973471618207518411}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
   m_LocalPosition: {x: 0.13390589, y: 0.16905493, z: 0.5229461}
   m_LocalScale: {x: 100, y: 100, z: 100}
   m_ConstrainProportionsScale: 0
@@ -196,21 +196,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &4418467800674524398
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5973471618207518411}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90034e5fcc9c6bb41be6e66204647bc6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ouiki.FPS.CoffeeMachine
-  cupSlot: {fileID: 8537221600914212165}
-  fillTime: 13
-  fillSound: {fileID: 949157957203974193}
 --- !u!65 &4259803144007475053
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -274,6 +259,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0053595556, y: 0.0043479577, z: 0.00069275853}
   m_Center: {x: 0.000078907906, y: 1.4901161e-10, z: -0.0010486746}
+--- !u!114 &2876914882657537071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973471618207518411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf972922326d69247b76f0dfbbec3491, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ouiki.Items.CoffeeMachine
+  cupSlot: {fileID: 8537221600914212165}
+  fillTime: 3
+  fillSound: {fileID: 949157957203974193}
 --- !u!1 &6379296964403139634
 GameObject:
   m_ObjectHideFlags: 0

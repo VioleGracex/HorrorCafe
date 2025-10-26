@@ -102,8 +102,8 @@ GameObject:
   - component: {fileID: 237984105712665621}
   - component: {fileID: 8006447043728102594}
   - component: {fileID: 8839542405816696407}
-  - component: {fileID: 8667908410945275593}
   - component: {fileID: 7840845251638991613}
+  - component: {fileID: 2553195727283861825}
   m_Layer: 6
   m_Name: coffeeliquidcup
   m_TagString: Untagged
@@ -119,7 +119,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7769292721592946161}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 100, y: 100, z: 100}
   m_ConstrainProportionsScale: 0
@@ -210,24 +210,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &8667908410945275593
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7769292721592946161}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fce098cd3ccd47b4e9aac320e2f6ed4f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ouiki.FPS.CupItem
-  isInteractable: 1
-  label: 
-  IsHeldByPlayer: 0
-  cupLabel: Cup
-  isFilled: 0
-  coffeeVisual: {fileID: 1648363417599070224}
 --- !u!65 &7840845251638991613
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -249,3 +231,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0009668563, y: 0.0010889296, z: 0.00096685666}
   m_Center: {x: 0, y: 0.00023254353, z: -3.2014214e-10}
+--- !u!114 &2553195727283861825
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7769292721592946161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a1bc2d0c80d27549b0267d94c9536f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ouiki.Items.CupItem
+  isInteractable: 1
+  label: 
+  IsHeldByPlayer: 0
+  cupLabel: Coffee Cup
+  isFilled: 0
+  coffeeVisual: {fileID: 1648363417599070224}
