@@ -2,11 +2,20 @@ using UnityEngine;
 
 namespace Ouiki.FPS
 {
+    [RequireComponent(typeof(BoxCollider))]
     public class PlaceableSlot : MonoBehaviour
     {
         public Transform snapPoint;
         public bool IsOccupied { get; private set; }
         private PickableItem currentItem;
+
+        private BoxCollider triggerArea;
+
+        void Awake()
+        {
+            triggerArea = GetComponent<BoxCollider>();
+            triggerArea.isTrigger = true; 
+        }
 
         public virtual bool CanPlace(PickableItem item)
         {
@@ -29,11 +38,28 @@ namespace Ouiki.FPS
             IsOccupied = false;
         }
 
+        void OnTriggerStay(Collider other)
+        {
+            var pickable = other.GetComponent<PickableItem>();
+            if (IsOccupied) return;
+
+            if (pickable != null && !pickable.IsHeldByPlayer && CanPlace(pickable))
+            {
+                Place(pickable);
+            }
+        }
+
         void OnDrawGizmos()
         {
-            Color boxColor = IsOccupied ? new Color(1f, 0f, 0f, 0.25f) : new Color(0f, 1f, 0f, 0.25f);
-            Gizmos.color = boxColor;
-            Gizmos.DrawCube(transform.position, Vector3.one * 0.1f);
+            BoxCollider box = GetComponent<BoxCollider>();
+            if (box)
+            {
+                Gizmos.color = IsOccupied ? new Color(1f, 0f, 0f, 0.1f) : new Color(0f, 1f, 0f, 0.1f);
+                Matrix4x4 oldMatrix = Gizmos.matrix;
+                Gizmos.matrix = transform.localToWorldMatrix;
+                Gizmos.DrawCube(box.center, box.size);
+                Gizmos.matrix = oldMatrix;
+            }
 
             if (snapPoint != null)
             {

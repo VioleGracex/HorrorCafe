@@ -1,4 +1,5 @@
 using DG.Tweening;
+using Ouiki.Interfaces;
 using UnityEngine;
 
 namespace Ouiki.FPS
@@ -9,9 +10,14 @@ namespace Ouiki.FPS
     {
         [SerializeField] private string label;
         public virtual string Label => label;
+
+        public virtual string ActionName => "[E] Grab";
         [HideInInspector] public bool IsHeldByPlayer = false;
         private Rigidbody rb;
         private Collider col;
+
+        private Tween moveTween;
+        private Tween rotateTween;
 
         void Awake()
         {
@@ -28,6 +34,10 @@ namespace Ouiki.FPS
 
         public virtual void OnPickUp()
         {
+            // Kill possible active tweens to ensure smooth pickup
+            if (moveTween != null && moveTween.IsActive()) moveTween.Kill();
+            if (rotateTween != null && rotateTween.IsActive()) rotateTween.Kill();
+
             SetInteractable(false);
             rb.useGravity = false;
             rb.linearDamping = 15f;
@@ -35,9 +45,8 @@ namespace Ouiki.FPS
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.constraints = RigidbodyConstraints.None;
+            rb.isKinematic = false; // Ensure it's dynamic for HoldAt movement
             IsHeldByPlayer = true;
-            if (col != null)
-                col.enabled = false;
         }
 
         public virtual void OnDrop()
@@ -48,9 +57,8 @@ namespace Ouiki.FPS
             rb.angularDamping = 0.05f;
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
             rb.interpolation = RigidbodyInterpolation.None;
+            rb.isKinematic = false;
             IsHeldByPlayer = false;
-            if (col != null)
-                col.enabled = true;
         }
 
         public void HoldAt(Vector3 pos, Quaternion rot)
@@ -62,11 +70,15 @@ namespace Ouiki.FPS
 
         public virtual void OnPlacedInSlot(PlaceableSlot slot)
         {
+            // Kill possible active tweens so they don't interfere
+            if (moveTween != null && moveTween.IsActive()) moveTween.Kill();
+            if (rotateTween != null && rotateTween.IsActive()) rotateTween.Kill();
+
             rb.isKinematic = true;
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            transform.DOMove(slot.snapPoint.position, 0.3f).SetEase(Ease.OutSine);
-            transform.DORotateQuaternion(slot.snapPoint.rotation, 0.3f).SetEase(Ease.OutSine);
+            moveTween = transform.DOMove(slot.snapPoint.position, 0.3f).SetEase(Ease.OutSine);
+            rotateTween = transform.DORotateQuaternion(slot.snapPoint.rotation, 0.3f).SetEase(Ease.OutSine);
             SetInteractable(false);
             if (col != null)
                 col.enabled = true; 
@@ -74,6 +86,9 @@ namespace Ouiki.FPS
 
         public virtual void OnRemovedFromSlot(PlaceableSlot slot)
         {
+            if (moveTween != null && moveTween.IsActive()) moveTween.Kill();
+            if (rotateTween != null && rotateTween.IsActive()) rotateTween.Kill();
+
             rb.isKinematic = false;
             SetInteractable(true);
             if (col != null)

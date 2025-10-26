@@ -1,3 +1,4 @@
+using Ouiki.Items;
 using UnityEngine;
 
 namespace Ouiki.FPS

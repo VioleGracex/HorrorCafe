@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using TMPro;
+using Ouiki.Interfaces;
 
 namespace Ouiki.FPS
 {
@@ -11,6 +13,10 @@ namespace Ouiki.FPS
         public Image staminaBarBG;
         public CanvasGroup staminaBarCG;
         public GameObject knockedOutOverlay;
+
+        [Header("Item Interaction UI")]
+        public TextMeshProUGUI itemLabelText;
+        public TextMeshProUGUI itemActionText;
 
         public bool useStaminaBar = true;
         public bool hideBarWhenFull = true;
@@ -35,6 +41,13 @@ namespace Ouiki.FPS
         public Color fullColor = Color.green;
         public Color regenColor = new Color(0f, 1f, 0f, 0.3f);
 
+        void Start()
+        {
+            // Optionally clear item texts at start
+            if (itemLabelText) itemLabelText.text = "";
+            if (itemActionText) itemActionText.text = "";
+        }
+
         public void Init(PlayerManager mgr)
         {
             manager = mgr;
@@ -56,6 +69,7 @@ namespace Ouiki.FPS
             UpdateCrosshair();
             UpdateStaminaBar();
             UpdateKnockedOutOverlay();
+            UpdateItemLabels();
         }
 
         void UpdateCrosshair()
@@ -121,6 +135,43 @@ namespace Ouiki.FPS
         {
             if (knockedOutOverlay == null) return;
             knockedOutOverlay.SetActive(state.IsKnockedOut);
+        }
+
+        void UpdateItemLabels()
+        {
+            if (itemLabelText == null || itemActionText == null || interactionController == null)
+                return;
+
+            // Default: Hide texts
+            itemLabelText.text = "";
+            itemActionText.text = "";
+
+            if (!interactionController.IsLookingAtInteractable || state.IsKnockedOut)
+                return;
+
+            var lookedAt = interactionController.GetLookedAtInteractable();
+
+            if (lookedAt is ILabel labelProvider)
+            {
+                itemLabelText.text = labelProvider.Label;
+            }
+            else
+            {
+                itemLabelText.text = lookedAt?.GetType().Name ?? "";
+            }
+
+            if (lookedAt is ICommand commandProvider && !string.IsNullOrEmpty(commandProvider.ActionName))
+            {
+                itemActionText.text = commandProvider.ActionName;
+            }
+            else if (lookedAt is PickableItem)
+            {
+                itemActionText.text = "[E] Grab";
+            }
+            else if (lookedAt != null)
+            {
+                itemActionText.text = "[E] Interact";
+            }
         }
     }
 }

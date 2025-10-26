@@ -1,4 +1,6 @@
-namespace Ouiki.FPS
+using Ouiki.FPS;
+
+namespace Ouiki.Interfaces
 {
     public interface IInteractable
     {
