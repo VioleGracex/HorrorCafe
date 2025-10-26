@@ -1,0 +1,259 @@
+using UnityEngine;
+using Ouiki.Items;
+using System.Collections;
+
+namespace Ouiki.Restaurant
+{
+    public class GhoulCustomer : BaseCustomer
+    {
+        [Header("Form GameObjects")]
+        public GameObject humanFormGO;
+        public GameObject monsterFormGO;
+
+        [Header("Animators")]
+        public Animator humanAnimator;
+        public Animator monsterAnimator;
+
+        [Header("Ghoul Settings")]
+        public float morphDelay = 0.6f;
+        public float shoutCooldown = 20f;
+
+        private bool hasMorphed = false;
+        private float morphTimer = 0f;
+        private float lastShoutTime = -999f;
+        private bool isTaunting = false;
+        private int coffeeOrderCount = 0;
+
+        protected override void Start()
+        {
+            base.Start();
+            SwitchToHumanForm();
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+
+            if (state == CustomerState.Angry && !hasMorphed)
+            {
+                morphTimer += Time.deltaTime;
+                if (morphTimer >= morphDelay)
+                {
+                    MorphToMonster();
+                    TauntAndChase();
+                }
+            }
+
+            if (state == CustomerState.Chasing && hasMorphed && Time.time - lastShoutTime > shoutCooldown)
+            {
+                lastShoutTime = Time.time;
+                animationController?.PlayScream();
+            }
+
+            if (state == CustomerState.Chasing && hasMorphed && PlayerLost())
+            {
+                lostPlayer = true;
+                lastKnownPlayerPos = baristaTarget ? baristaTarget.position : transform.position;
+            }
+        }
+
+        bool PlayerLost()
+        {
+            if (!baristaTarget) return true;
+            float dist = Vector3.Distance(transform.position, baristaTarget.position);
+            return dist > visionRadius;
+        }
+
+        void SwitchToHumanForm()
+        {
+            if (humanFormGO) humanFormGO.SetActive(true);
+            if (monsterFormGO) monsterFormGO.SetActive(false);
+            animationController.SetAnimator(humanAnimator);
+            hasMorphed = false;
+        }
+
+        void SwitchToMonsterForm()
+        {
+            if (humanFormGO) humanFormGO.SetActive(false);
+            if (monsterFormGO) monsterFormGO.SetActive(true);
+            animationController.SetAnimator(monsterAnimator);
+            hasMorphed = true;
+        }
+
+        void MorphToMonster()
+        {
+            morphTimer = 0f;
+            SwitchToMonsterForm();
+            animationController?.PlayMorph();
+            MakeAllHumansFlee();
+        }
+
+        void MorphToHuman()
+        {
+            SwitchToHumanForm();
+            animationController?.PlayMorph();
+        }
+
+        void TauntAndChase()
+        {
+            animationController?.PlayTaunt();
+            isTaunting = true;
+            Invoke(nameof(BeginChase), 1.5f);
+        }
+
+        void BeginChase()
+        {
+            SetState(CustomerState.Chasing);
+            isTaunting = false;
+            animationController?.PlayAlert();
+            if (baristaTarget)
+            {
+                agent.speed = chaseSpeed * 1.3f;
+                agent.stoppingDistance = attackDistance * 0.8f;
+                agent.SetDestination(baristaTarget.position);
+                animationController?.PlayRun();
+            }
+        }
+
+        void MakeAllHumansFlee()
+        {
+            if (customerSpawner == null) return;
+            foreach (var cust in customerSpawner.ActiveCustomers)
+            {
+                if (cust != this && cust is HumanCustomer)
+                {
+                    cust.FleeFromGhoul();
+                }
+            }
+        }
+
+        protected override void StartOrder()
+        {
+            SetState(CustomerState.Ordering);
+            patienceRemaining = patienceTime;
+            coffeeOrderCount++;
+        }
+
+        protected override void CheckForServedCoffee()
+        {
+            var slot = assignedSeat.serviceSlot;
+            if (slot == null || !slot.IsOccupied) return;
+            var cup = slot.GetComponentInChildren<CupItem>();
+            if (cup != null && cup.IsFilled && cup.isActiveAndEnabled)
+            {
+                ServeCoffee(cup);
+            }
+        }
+
+        public override void ServeCoffee(CupItem cup)
+        {
+            if (state != CustomerState.Ordering && state != CustomerState.Waiting) return;
+            coffeeServed = true;
+            isDrinking = true;
+            cup.SetInteractable(false);
+            StartDrinking(cup);
+        }
+
+        protected override void StartDrinking(CupItem cup)
+        {
+            SetState(CustomerState.Drinking);
+            animationController?.PlaySitDrink();
+            StartCoroutine(FinishDrinkingRoutine(cup, 2.5f));
+        }
+
+        protected override IEnumerator FinishDrinkingRoutine(CupItem cup, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            FinishDrinking(cup);
+        }
+
+        protected override void FinishDrinking(CupItem cup)
+        {
+            SetState(CustomerState.Happy);
+            animationController?.PlaySitWohoo();
+            cup.SetInteractable(true);
+            cup.SetFilled(false);
+            assignedSeat.serviceSlot.Remove();
+
+            if (OtherHumansExist())
+            {
+                Invoke(nameof(StartOrder), 1.5f);
+            }
+            else
+            {
+                Invoke(nameof(StartMorphSequence), 1.5f);
+            }
+        }
+
+        bool OtherHumansExist()
+        {
+            if (customerSpawner == null) return false;
+            foreach (var cust in customerSpawner.ActiveCustomers)
+            {
+                if (cust != this && cust is HumanCustomer && cust.state != CustomerState.Left && cust.state != CustomerState.Leaving && cust.state != CustomerState.Fleeing)
+                    return true;
+            }
+            return false;
+        }
+
+        void StartMorphSequence()
+        {
+            SetState(CustomerState.Angry);
+            patienceRemaining = 0;
+            morphTimer = 0;
+        }
+
+        protected override void BecomeImpatient()
+        {
+            SetState(CustomerState.Angry);
+            morphTimer = 0;
+            patienceRemaining = 0;
+        }
+
+        public override void FleeFromGhoul() { }
+
+        public override void HandleChasePlayer()
+        {
+            if (baristaTarget == null)
+            {
+                StandAndLeave();
+                return;
+            }
+
+            float dist = Vector3.Distance(transform.position, baristaTarget.position);
+
+            if (dist <= attackDistance * 1.2f)
+            {
+                StandAndLeave();
+            }
+            else
+            {
+                if (!agent.pathPending)
+                {
+                    agent.SetDestination(baristaTarget.position);
+                    animationController?.PlayRun();
+                    lostPlayer = false;
+                    lastKnownPlayerPos = baristaTarget.position;
+                }
+            }
+        }
+
+        protected override void StandAndLeave()
+        {
+            SetState(CustomerState.Leaving);
+            SwitchToHumanForm();
+            animationController?.PlayIdle();
+            assignedSeat?.Release();
+            agent.SetDestination(assignedSeat.StandPointWorld);
+        }
+
+#if UNITY_EDITOR
+        protected override void OnDrawGizmosSelected()
+        {
+            base.OnDrawGizmosSelected();
+            Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.18f);
+            Gizmos.DrawWireSphere(transform.position, visionRadius);
+        }
+#endif
+    }
+}

@@ -22,9 +22,15 @@ namespace Ouiki.FPS
         public float MaxHoldDistance = 4f;
         public float ScrollSensitivity = 0.5f;
 
+        [Header("Layer Settings")]
+        public LayerMask heldItemLayerMask;  
+        public LayerMask interactableLayerMaskForDrop; 
+
         private float heldItemDistance = 0f;
 
         private PickableItem heldItem;
+        private int originalHeldItemLayer = -1;
+
         public bool HasItem => heldItem != null;
         public bool IsLookingAtInteractable { get; private set; }
         public IInteractable LookedAtInteractable { get; private set; }
@@ -90,13 +96,23 @@ namespace Ouiki.FPS
             float distance = pickupDistance ?? Vector3.Distance(playerCamera.transform.position, item.transform.position);
             heldItemDistance = Mathf.Clamp(distance, MinHoldDistance, MaxHoldDistance);
             item.OnPickUp();
+
+            originalHeldItemLayer = item.gameObject.layer;
+            SetLayerRecursively(item.gameObject, LayerMaskToLayer(heldItemLayerMask));
         }
 
         public void TryDrop()
         {
             if (!HasItem) return;
+
+            if (originalHeldItemLayer != -1)
+                SetLayerRecursively(heldItem.gameObject, originalHeldItemLayer);
+            else
+                SetLayerRecursively(heldItem.gameObject, LayerMaskToLayer(interactableLayerMaskForDrop));
+
             heldItem.OnDrop();
             heldItem = null;
+            originalHeldItemLayer = -1;
         }
 
         public IInteractable GetLookedAtInteractable()
@@ -113,12 +129,40 @@ namespace Ouiki.FPS
         {
             if (heldItem == item)
             {
+                if (originalHeldItemLayer != -1)
+                    SetLayerRecursively(heldItem.gameObject, originalHeldItemLayer);
+                else
+                    SetLayerRecursively(heldItem.gameObject, LayerMaskToLayer(interactableLayerMaskForDrop));
+
                 heldItem = null;
+                originalHeldItemLayer = -1;
             }
         }
 
         public void TakeDamage()
         {
+        }
+
+        private void SetLayerRecursively(GameObject obj, int newLayer)
+        {
+            if (obj == null) return;
+            obj.layer = newLayer;
+            foreach (Transform child in obj.transform)
+            {
+                if (child != null)
+                    SetLayerRecursively(child.gameObject, newLayer);
+            }
+        }
+
+        private int LayerMaskToLayer(LayerMask mask)
+        {
+            int bits = mask.value;
+            for (int i = 0; i < 32; i++)
+            {
+                if ((bits & (1 << i)) != 0)
+                    return i;
+            }
+            return 0; 
         }
 
         void OnDrawGizmos()

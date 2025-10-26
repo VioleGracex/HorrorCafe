@@ -112,7 +112,7 @@ Material:
     - _EnvironmentReflections: 1
     - _FillHeight: 0
     - _FillPercent: 0
-    - _FillValue: 0
+    - _FillValue: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
