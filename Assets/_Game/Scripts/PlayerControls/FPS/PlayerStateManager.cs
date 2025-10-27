@@ -22,7 +22,9 @@ namespace Ouiki.FPS
         Jumping,
         KnockedOut,
         Hiding,
-        Pushing
+        Pushing,
+        Dead,
+        Grabbed 
     }
 
     public class PlayerCapabilities
@@ -128,10 +130,32 @@ namespace Ouiki.FPS
                 CanZoom = false,
                 CanHide = false,
                 CanPush = true
+            },
+            [PlayerState.Dead] = new PlayerCapabilities
+            {
+                CanMove = false,
+                CanJump = false,
+                CanCrouch = false,
+                CanSprint = false,
+                CanZoom = false,
+                CanHide = false,
+                CanPush = false
+            },
+            [PlayerState.Grabbed] = new PlayerCapabilities 
+            {
+                CanMove = false,  
+                CanJump = false,
+                CanCrouch = false,
+                CanSprint = false,
+                CanZoom = true,   
+                CanHide = false,
+                CanPush = false
             }
         };
 
         public bool IsKnockedOut => CurrentState == PlayerState.KnockedOut;
+        public bool IsDead => CurrentState == PlayerState.Dead;
+        public bool IsGrabbed => CurrentState == PlayerState.Grabbed;
 
         public bool CanDo(PlayerAction action)
         {
@@ -154,6 +178,8 @@ namespace Ouiki.FPS
 
         public void KnockOut() => SetState(PlayerState.KnockedOut);
         public void Recover() => SetState(PlayerState.Standing);
+        public void Die() => SetState(PlayerState.Dead);
+        public void GetGrabbed() => SetState(PlayerState.Grabbed);
         public void StartHide() => SetState(PlayerState.Hiding);
         public void StopHide() => SetState(PlayerState.Standing);
         public void StartPush() => SetState(PlayerState.Pushing);
@@ -187,7 +213,7 @@ namespace Ouiki.FPS
 
         public void Land()
         {
-            if (!IsKnockedOut)
+            if (!IsKnockedOut && !IsDead && !IsGrabbed)
                 SetState(PlayerState.Standing);
         }
 

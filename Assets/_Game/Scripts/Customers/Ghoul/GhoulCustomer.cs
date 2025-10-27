@@ -1,6 +1,8 @@
 using UnityEngine;
 using Ouiki.Items;
 using System.Collections;
+using Ouiki.FPS;
+using DG.Tweening;
 
 namespace Ouiki.Restaurant
 {
@@ -18,11 +20,23 @@ namespace Ouiki.Restaurant
         public float morphDelay = 0.6f;
         public float shoutCooldown = 20f;
 
+        [Header("Grab/Jump Scare")]
+        public float grabDuration = 0.65f;
+        public float faceToCameraDistance = 0.4f;
+        public float holdPlayerDuration = 1.2f;
+
+        [Header("Scream Settings")]
+        public AudioSource screamAudioSource;   
+        public AudioClip screamClip;              
+
         private bool hasMorphed = false;
         private float morphTimer = 0f;
         private float lastShoutTime = -999f;
         private bool isTaunting = false;
         private int coffeeOrderCount = 0;
+
+        private bool hasGrabbedPlayer = false;
+        private Transform rightHandIK; 
 
         protected override void Start()
         {
@@ -47,7 +61,7 @@ namespace Ouiki.Restaurant
             if (state == CustomerState.Chasing && hasMorphed && Time.time - lastShoutTime > shoutCooldown)
             {
                 lastShoutTime = Time.time;
-                animationController?.PlayScream();
+                PlayScream();
             }
 
             if (state == CustomerState.Chasing && hasMorphed && PlayerLost())
@@ -224,7 +238,7 @@ namespace Ouiki.Restaurant
 
             if (dist <= attackDistance * 1.2f)
             {
-                StandAndLeave();
+                TryGrabPlayer();
             }
             else
             {
@@ -235,6 +249,60 @@ namespace Ouiki.Restaurant
                     lostPlayer = false;
                     lastKnownPlayerPos = baristaTarget.position;
                 }
+            }
+        }
+
+        private void TryGrabPlayer()
+        {
+            if (hasGrabbedPlayer) return;
+
+            // Check by tag if this is the player (instead of relying on component)
+            if (baristaTarget != null && baristaTarget.CompareTag("Player"))
+            {
+                hasGrabbedPlayer = true;
+                // Get the PlayerInteractionController (should be on the player object)
+                var player = baristaTarget.GetComponent<PlayerStateManager>();
+                if (player != null)
+                {
+                    StartCoroutine(GrabSequence(player));
+                }
+            }
+        }
+
+        private IEnumerator GrabSequence(PlayerStateManager player)
+        {
+            animationController.PlayGrab();
+
+            // Use Animator IK to get right hand if possible
+            if (rightHandIK == null && monsterAnimator != null)
+            {
+                rightHandIK = monsterAnimator.GetBoneTransform(HumanBodyBones.RightHand);
+            }
+
+            if (player != null)
+                player.GetGrabbed();
+
+            yield return new WaitForSeconds(grabDuration + holdPlayerDuration);
+
+            StartCoroutine(GhoulScreamLoop());
+        }
+
+        private IEnumerator GhoulScreamLoop()
+        {
+            while (true)
+            {
+                PlayScream();
+                yield return new WaitForSeconds(2.5f); 
+            }
+        }
+
+        private void PlayScream()
+        {
+            animationController?.PlayScream();
+            if (screamAudioSource != null && screamClip != null)
+            {
+                screamAudioSource.clip = screamClip;
+                screamAudioSource.Play();
             }
         }
 

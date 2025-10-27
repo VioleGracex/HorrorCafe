@@ -1,11 +1,13 @@
-using UnityEngine;
 using Ouiki.Items;
 using Ouiki.FPS;
+using UnityEngine;
 
 namespace Ouiki.Restaurant
 {
     public class HumanCustomer : BaseCustomer
     {
+        private bool hasKnockedOutPlayer = false;
+
         protected override void BecomeImpatient()
         {
             SnapToStandPoint(); 
@@ -33,7 +35,11 @@ namespace Ouiki.Restaurant
 
             if (dist <= attackDistance)
             {
-                HitBarista();
+                if (!hasKnockedOutPlayer)
+                {
+                    KnockOutBarista();
+                    hasKnockedOutPlayer = true;
+                }
                 StandAndLeave();
             }
             else
@@ -51,11 +57,16 @@ namespace Ouiki.Restaurant
             }
         }
 
+        private void KnockOutBarista()
+        {
+            var player = baristaTarget?.GetComponent<PlayerInteractionController>();
+            if (player != null)
+                player.KnockOutPlayer();
+        }
+
         protected override void HitBarista()
         {
-            if (hasHitBarista) return;
-            hasHitBarista = true;
-            baristaTarget?.GetComponent<PlayerInteractionController>()?.SendMessage("TakeDamage", SendMessageOptions.DontRequireReceiver);
+            // Deprecated: KnockOutBarista is now called in HandleChasePlayer
         }
     }
 }

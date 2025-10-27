@@ -1,6 +1,8 @@
 using Ouiki.Interfaces;
 using Ouiki.Items;
 using UnityEngine;
+using System.Collections;
+using DG.Tweening;
 
 namespace Ouiki.FPS
 {
@@ -9,6 +11,7 @@ namespace Ouiki.FPS
         [Header("References")]
         public PlayerInputHandler inputHandler;
         public Camera playerCamera;
+        public PlayerStateManager stateManager;
 
         [Header("Interaction Settings")]
         public float interactDistance = 2f;
@@ -23,8 +26,16 @@ namespace Ouiki.FPS
         public float ScrollSensitivity = 0.5f;
 
         [Header("Layer Settings")]
-        public LayerMask heldItemLayerMask;  
-        public LayerMask interactableLayerMaskForDrop; 
+        public LayerMask heldItemLayerMask;
+        public LayerMask interactableLayerMaskForDrop;
+
+        [Header("Knockout Settings")]
+        [Tooltip("How long the player stays knocked out (seconds)")]
+        public float knockedOutTime = 2f;
+        [Tooltip("How long the standup animation/tween should take (seconds)")]
+        public float standUpDuration = 0.25f;
+        [Tooltip("World Y coordinate to tween to when standing up (player standing height)")]
+        public float standUpY = 1.7f;
 
         private float heldItemDistance = 0f;
 
@@ -35,8 +46,15 @@ namespace Ouiki.FPS
         public bool IsLookingAtInteractable { get; private set; }
         public IInteractable LookedAtInteractable { get; private set; }
 
+        private Coroutine knockoutRoutine;
+        private Tween knockdownTween;
+        private Tween standupTween;
+
         void Update()
         {
+            if (stateManager != null && stateManager.IsKnockedOut)
+                return;
+
             IsLookingAtInteractable = false;
             LookedAtInteractable = null;
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
@@ -139,8 +157,62 @@ namespace Ouiki.FPS
             }
         }
 
-        public void TakeDamage()
+        /// <summary>
+        /// Knock out the player. Will smoothly move the player to the ground, play knockdown, then stand up after a delay.
+        /// </summary>
+        public void KnockOutPlayer()
         {
+            if (knockoutRoutine != null)
+                StopCoroutine(knockoutRoutine);
+
+            knockdownTween?.Kill();
+            standupTween?.Kill();
+
+            knockoutRoutine = StartCoroutine(KnockoutRoutine());
+        }
+
+        private IEnumerator KnockoutRoutine()
+        {
+            yield return StartCoroutine(DOTweenSnapToGround());
+
+            if (stateManager != null)
+                stateManager.KnockOut();
+
+            yield return new WaitForSeconds(knockedOutTime);
+
+            if (stateManager != null)
+                stateManager.Recover();
+
+            yield return StartCoroutine(DOTweenStandUp());
+        }
+
+        private IEnumerator DOTweenSnapToGround()
+        {
+            Vector3 start = transform.position + Vector3.up * 0.1f;
+            float maxDistance = 10f;
+            if (Physics.Raycast(start, Vector3.down, out RaycastHit hit, maxDistance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                Vector3 groundPos = new Vector3(transform.position.x, hit.point.y, transform.position.z);
+                float duration = 0.15f;
+                knockdownTween = transform.DOMoveY(groundPos.y, duration).SetEase(Ease.InSine);
+                yield return knockdownTween.WaitForCompletion();
+            }
+            else
+            {
+                yield return null;
+            }
+        }
+
+        private IEnumerator DOTweenStandUp()
+        {
+            float currentY = transform.position.y;
+            float targetY = standUpY;
+
+            if (currentY < targetY - 0.05f)
+            {
+                standupTween = transform.DOMoveY(targetY, standUpDuration).SetEase(Ease.OutSine);
+                yield return standupTween.WaitForCompletion();
+            }
         }
 
         private void SetLayerRecursively(GameObject obj, int newLayer)
@@ -162,7 +234,7 @@ namespace Ouiki.FPS
                 if ((bits & (1 << i)) != 0)
                     return i;
             }
-            return 0; 
+            return 0;
         }
 
         void OnDrawGizmos()
