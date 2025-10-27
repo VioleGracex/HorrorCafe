@@ -43,17 +43,12 @@ namespace Ouiki.Restaurant
         [Header("Grabbed Player Arm Offset")]
         public Vector3 playerGrabbedArmOffset = Vector3.zero;
 
-        protected override void Start()
-        {
-            base.Start();
-            //SwitchToHumanForm();
-        }
-
         protected override void Update()
         {
             base.Update();
 
-            if (state == CustomerState.Angry && !hasMorphed)
+            // If morphing sequence started (no more humans) and not morphed, morph and chase after delay
+            if (state == CustomerState.AngrySitting && !hasMorphed)
             {
                 morphTimer += Time.deltaTime;
                 if (morphTimer >= morphDelay)
@@ -63,12 +58,14 @@ namespace Ouiki.Restaurant
                 }
             }
 
+            // Scream periodically while chasing in monster form
             if (state == CustomerState.Chasing && hasMorphed && Time.time - lastShoutTime > shoutCooldown)
             {
                 lastShoutTime = Time.time;
                 PlayScream();
             }
 
+            // If lost player during chase, go to search mode
             if (state == CustomerState.Chasing && hasMorphed && PlayerLost())
             {
                 lostPlayer = true;
@@ -195,6 +192,7 @@ namespace Ouiki.Restaurant
             cup.SetFilled(false);
             assignedSeat.serviceSlot.Remove();
 
+            // If other humans exist, order again after a delay, else start morph sequence
             if (OtherHumansExist())
             {
                 Invoke(nameof(StartOrder), 1.5f);
@@ -218,16 +216,18 @@ namespace Ouiki.Restaurant
 
         void StartMorphSequence()
         {
-            SetState(CustomerState.Angry);
-            patienceRemaining = 0;
+            // Enter AngrySitting (morph delay) then morph and chase
+            SetState(CustomerState.AngrySitting);
+            patienceRemaining = 9999f; // Don't morph from patience, only from this sequence
             morphTimer = 0;
         }
 
         protected override void BecomeImpatient()
         {
-            SetState(CustomerState.Angry);
-            morphTimer = 0;
+            // Runs out of patience: immediately morph and chase
             patienceRemaining = 0;
+            MorphToMonster();
+            TauntAndChase();
         }
 
         public override void FleeFromGhoul() { }
@@ -248,13 +248,13 @@ namespace Ouiki.Restaurant
             }
             else
             {
-                if (!agent.pathPending)
-                {
-                    agent.SetDestination(baristaTarget.position);
-                    animationController?.PlayRun();
-                    lostPlayer = false;
-                    lastKnownPlayerPos = baristaTarget.position;
-                }
+                SetState(CustomerState.Chasing);
+                agent.speed = chaseSpeed * 1.3f;
+                agent.stoppingDistance = attackDistance * 0.8f;
+                agent.SetDestination(baristaTarget.position);
+                animationController?.PlayRun();
+                lostPlayer = false;
+                lastKnownPlayerPos = baristaTarget.position;
             }
         }
 

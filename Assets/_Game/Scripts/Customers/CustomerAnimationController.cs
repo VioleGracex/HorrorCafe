@@ -16,7 +16,7 @@ namespace Ouiki.Restaurant
         public virtual void PlaySitIdle()    => animator?.Play("chair sit idle");
         public virtual void PlaySitMad()     => animator?.Play("sit mad");
         public virtual void PlaySitShout()   => animator?.Play("sit shout");
-        public virtual void PlaySitDrink()   => animator?.Play("Sit drink");
+        public virtual void PlaySitDrink()   => animator?.Play("sit drink");
         public virtual void PlaySitClap()    => animator?.Play("sit clap");
         public virtual void PlaySitWohoo()   => animator?.Play("sit wohoo");
         public virtual void PlayIdle()       => animator?.Play("idle");

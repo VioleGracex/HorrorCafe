@@ -12,25 +12,16 @@ namespace Ouiki.Restaurant
         {
             base.Update();
 
-            // When waiting or ordering, check for patience thresholds
-            if ((state == CustomerState.Waiting || state == CustomerState.Ordering) && !isDrinking)
-            {
-                // If patience <= 50% and not yet angry sitting
-                if (!hasBecomeAngrySitting && patienceRemaining <= (patienceTime * 0.5f) && patienceRemaining > 0f)
-                {
-                    SetState(CustomerState.Angry);
-                    animationController.PlaySitMad();
-                    hasBecomeAngrySitting = true;
-                }
-                // If patience is 0, stand up and start chasing
-                else if (patienceRemaining <= 0f)
-                {
-                    BecomeImpatient();
-                }
-            }
-
-            if (state == CustomerState.Angry || state == CustomerState.Chasing)
+            // Only handle chase logic if actually chasing
+            if (state == CustomerState.Chasing)
                 HandleChasePlayer();
+        }
+
+        protected override void BecomeAngrySitting()
+        {
+            SetState(CustomerState.AngrySitting);
+            animationController.PlaySitMad();
+            hasBecomeAngrySitting = true;
         }
 
         protected override void BecomeImpatient()

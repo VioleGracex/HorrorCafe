@@ -10,7 +10,7 @@ namespace Ouiki.Restaurant
 {
     public enum CustomerState
     {
-        WalkingToSeat, Sitting, Ordering, Waiting, Angry, AngrySitting, Chasing, Drinking, Happy, Leaving, Left, Fleeing, Searching, none
+        WalkingToSeat, Sitting, Ordering, Waiting,AngrySitting, Chasing, Drinking, Happy, Leaving, Left, Fleeing, Searching, none
     }
 
     [RequireComponent(typeof(NavMeshAgent))]
@@ -37,7 +37,7 @@ namespace Ouiki.Restaurant
 
         [Header("Vision/Detection")]
         public float visionRadius = 12f;
-        public float visionFOV = 90f; // New: field of view angle for cone, in degrees
+        public float visionFOV = 90f;
         public float searchRadius = 4f;
         public float searchTime = 4f;
         public int maxSearchAttempts = 5;
@@ -51,8 +51,6 @@ namespace Ouiki.Restaurant
 
         private Tween _sitTween;
         private bool _isSittingInProgress = false;
-
-        // === ANGRY SITTING LOGIC ===
         protected bool hasBecomeAngrySitting = false;
 
         public event Action<BaseCustomer> OnLeave;
@@ -85,10 +83,10 @@ namespace Ouiki.Restaurant
                     break;
                 case CustomerState.Ordering:
                 case CustomerState.Waiting:
+                case CustomerState.AngrySitting:
                     patienceRemaining -= Time.deltaTime;
 
-                    // --- Angry Sitting logic here ---
-                    if (!hasBecomeAngrySitting && patienceRemaining <= patienceTime * 0.5f && patienceRemaining > 0f && !isDrinking)
+                    if ((state == CustomerState.Ordering || state == CustomerState.Waiting) && !hasBecomeAngrySitting && patienceRemaining <= patienceTime * 0.5f && patienceRemaining > 0f && !isDrinking)
                     {
                         BecomeAngrySitting();
                     }
@@ -97,11 +95,6 @@ namespace Ouiki.Restaurant
                         BecomeImpatient();
                     else
                         CheckForServedCoffee();
-                    break;
-                case CustomerState.AngrySitting:
-                    patienceRemaining -= Time.deltaTime;
-                    if (patienceRemaining <= 0f && !isDrinking)
-                        BecomeImpatient();
                     break;
                 case CustomerState.Leaving:
                 case CustomerState.Fleeing:
@@ -136,15 +129,21 @@ namespace Ouiki.Restaurant
             _isSittingInProgress = true;
             agent.ResetPath();
             _sitTween?.Kill();
-            _sitTween = transform.DOMove(assignedSeat.SitPointWorld, 0.5f).SetEase(Ease.InOutSine)
-                .OnComplete(() =>
-                {
-                    transform.rotation = assignedSeat.SitRotationWorld;
-                    SetState(CustomerState.Sitting);
-                    StartOrder();
-                    _sitTween = null;
-                    _isSittingInProgress = false;
-                });
+
+            Sequence sitSequence = DOTween.Sequence();
+            sitSequence.Append(transform.DOMove(assignedSeat.SitPointWorld, 0.5f).SetEase(Ease.InOutSine));
+            sitSequence.Join(transform.DORotateQuaternion(assignedSeat.SitRotationWorld, 0.5f).SetEase(Ease.InOutSine));
+            sitSequence.OnComplete(() =>
+            {
+                transform.position = assignedSeat.SitPointWorld;
+                transform.rotation = assignedSeat.SitRotationWorld;
+                SetState(CustomerState.Sitting);
+                StartOrder();
+                _sitTween = null;
+                _isSittingInProgress = false;
+            });
+
+            _sitTween = sitSequence;
         }
 
         protected virtual void StartOrder()
@@ -172,8 +171,8 @@ namespace Ouiki.Restaurant
         {
             assignedSeat?.HideServiceIndicator();
             SnapToStandPoint();
-            SetState(CustomerState.Angry);
-            animationController.PlayRun(); // For default, use run for angry (override in HumanCustomer)
+            SetState(CustomerState.Chasing);
+            animationController.PlayRun();
             chaseTimer = chaseTime;
         }
 
@@ -190,6 +189,7 @@ namespace Ouiki.Restaurant
 
         public virtual void ServeCoffee(CupItem cup)
         {
+            // Can serve coffee if not standing up and chasing
             if (state != CustomerState.Ordering && state != CustomerState.Waiting && state != CustomerState.AngrySitting) return;
             coffeeServed = true;
             isDrinking = true;
@@ -201,6 +201,7 @@ namespace Ouiki.Restaurant
         {
             assignedSeat?.HideServiceIndicator();
             SetState(CustomerState.Drinking);
+            animationController?.PlaySitDrink();
             StartCoroutine(FinishDrinkingRoutine(cup, 2.5f));
         }
 
@@ -266,9 +267,6 @@ namespace Ouiki.Restaurant
                 case CustomerState.AngrySitting:
                     animationController.PlaySitMad();
                     break;
-                case CustomerState.Angry:
-                    animationController.PlayRun(); // Default angry is now chase, can override in subclasses
-                    break;
                 case CustomerState.Chasing:
                     animationController.PlayRun();
                     break;
@@ -292,7 +290,7 @@ namespace Ouiki.Restaurant
 
         public virtual void FleeFromGhoul()
         {
-            if (state == CustomerState.Left || state == CustomerState.Leaving || state == CustomerState.Fleeing || state == CustomerState.Chasing || state == CustomerState.Angry || state == CustomerState.AngrySitting) return;
+            if (state == CustomerState.Left || state == CustomerState.Leaving || state == CustomerState.Fleeing || state == CustomerState.Chasing) return;
             isFleeing = true;
             _sitTween?.Kill();
             _sitTween = null;

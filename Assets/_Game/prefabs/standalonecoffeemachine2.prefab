@@ -230,7 +230,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ouiki.Items.CoffeeMachine
   cupSlot: {fileID: 8537221600914212165}
-  fillTime: 13
+  fillTime: 5
   fillSound: {fileID: 949157957203974193}
 --- !u!135 &3833705978579636904
 SphereCollider:

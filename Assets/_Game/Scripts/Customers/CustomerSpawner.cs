@@ -24,7 +24,6 @@ namespace Ouiki.Restaurant
 
         private float timer = 0f;
         private bool firstCustomerSpawned = false;
-        private readonly Queue<BaseCustomer> customerPool = new Queue<BaseCustomer>();
         private readonly List<BaseCustomer> activeCustomers = new List<BaseCustomer>();
         private int spawnPatternIndex = 0;
         private readonly List<string> spawnPattern = new List<string> { "Human", "Human", "Ghoul" };
@@ -86,7 +85,6 @@ namespace Ouiki.Restaurant
             string type = spawnPattern[spawnPatternIndex % spawnPattern.Count];
             spawnPatternIndex++;
 
-            // Just pick a random CustomerTypeSO (doesn't matter if Human or Ghoul)
             if (customerTypes == null || customerTypes.Count == 0)
             {
                 Debug.LogWarning("[CustomerSpawner] customerTypes list is empty!");
@@ -105,7 +103,7 @@ namespace Ouiki.Restaurant
                     return;
                 }
                 var prefab = humanCustomerPrefabs[Random.Range(0, humanCustomerPrefabs.Count)];
-                customer = GetCustomerFromPool(prefab, spawnPos);
+                customer = Instantiate(prefab, spawnPos, Quaternion.identity);
             }
             else if (type == "Ghoul")
             {
@@ -115,7 +113,7 @@ namespace Ouiki.Restaurant
                     return;
                 }
                 var prefab = ghoulCustomerPrefabs[Random.Range(0, ghoulCustomerPrefabs.Count)];
-                customer = GetCustomerFromPool(prefab, spawnPos);
+                customer = Instantiate(prefab, spawnPos, Quaternion.identity);
             }
 
             if (customer == null)
@@ -126,7 +124,6 @@ namespace Ouiki.Restaurant
 
             customer.Initialize(typeSO, this);
 
-            // Exit point is set to the spawn location for this customer
             customer.exitPoint = spawnPos;
 
             if (type == "Ghoul")
@@ -140,25 +137,6 @@ namespace Ouiki.Restaurant
             activeCustomers.Add(customer);
 
             Debug.Log($"[CustomerSpawner] Spawned {type} customer at {spawnPos}");
-        }
-
-        BaseCustomer GetCustomerFromPool(BaseCustomer prefab, Vector3 spawnPosition)
-        {
-            foreach (var c in customerPool)
-            {
-                if (c.GetType() == prefab.GetType())
-                {
-                    customerPool.Dequeue();
-                    c.gameObject.SetActive(true);
-                    c.transform.position = spawnPosition;
-                    c.transform.rotation = Quaternion.identity;
-                    Debug.Log($"[CustomerSpawner] Reused customer from pool: {c.name}");
-                    return c;
-                }
-            }
-            var instance = Instantiate(prefab, spawnPosition, Quaternion.identity);
-            Debug.Log($"[CustomerSpawner] Instantiated new customer: {instance.name}");
-            return instance;
         }
 
         Vector3 GetRandomSpawnPosition()
@@ -189,8 +167,7 @@ namespace Ouiki.Restaurant
                 ghoulActive = false;
 
             activeCustomers.Remove(customer);
-            customer.gameObject.SetActive(false);
-            customerPool.Enqueue(customer);
+            Destroy(customer.gameObject);
         }
 
 #if UNITY_EDITOR
