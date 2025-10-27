@@ -187,7 +187,7 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 2
   m_BaseOffset: 0
-  m_WalkableMask: 4294967295
+  m_WalkableMask: 1
   m_ObstacleAvoidanceType: 4
 --- !u!114 &7765898031949512304
 MonoBehaviour:
@@ -222,8 +222,9 @@ MonoBehaviour:
   holdPlayerDuration: 1.2
   screamAudioSource: {fileID: 6433406034018596707}
   screamClip: {fileID: 8300000, guid: 20f49ae34e8f16441a074f31bc8f6198, type: 3}
-  hasMorphed: 0
   playerGrabbedLocalEulerAngles: {x: 72, y: 205, z: -12}
+  playerGrabbedArmOffset: {x: 0, y: 0, z: 0}
+  hasMorphed: 0
 --- !u!114 &1951967016327844485
 MonoBehaviour:
   m_ObjectHideFlags: 0

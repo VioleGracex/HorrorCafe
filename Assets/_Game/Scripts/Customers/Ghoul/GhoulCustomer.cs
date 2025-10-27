@@ -97,6 +97,7 @@ namespace Ouiki.Restaurant
         void SwitchToHumanForm()
         {
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             if (humanFormGO) humanFormGO.SetActive(true);
             if (monsterFormGO) monsterFormGO.SetActive(false);
             animationController.SetAnimator(humanAnimator);
@@ -107,6 +108,7 @@ namespace Ouiki.Restaurant
         public void SwitchToMonsterForm()
         {
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             if (humanFormGO) humanFormGO.SetActive(false);
             if (monsterFormGO) monsterFormGO.SetActive(true);
             animationController.SetAnimator(monsterAnimator);
@@ -118,6 +120,7 @@ namespace Ouiki.Restaurant
         {
             morphTimer = 0f;
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             SwitchToMonsterForm();
             animationController?.PlayMorph();
             MakeAllHumansFlee();
@@ -127,6 +130,7 @@ namespace Ouiki.Restaurant
         void MorphToHuman()
         {
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             SwitchToHumanForm();
             animationController?.PlayMorph();
             Debug.Log("[GhoulCustomer] Morphed to human.");
@@ -135,6 +139,7 @@ namespace Ouiki.Restaurant
         void TauntAndChase()
         {
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             animationController?.PlayTaunt();
             isTaunting = true;
             Invoke(nameof(BeginChase), 1.5f);
@@ -144,6 +149,7 @@ namespace Ouiki.Restaurant
         public void BeginChase()
         {
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             SetState(CustomerState.Chasing);
             MusicManager.Instance?.PlayChaseMusic();
             isTaunting = false;
@@ -301,6 +307,9 @@ namespace Ouiki.Restaurant
                 return;
             }
 
+            // Always stand up before chasing!
+            StandUpToStandPointWorldIfSitting();
+
             SetState(CustomerState.Chasing);
             agent.enabled = true; 
             agent.speed = chaseSpeed * 1.3f;
@@ -417,6 +426,7 @@ namespace Ouiki.Restaurant
             {
                 Vector3 searchPos = lastKnownPlayerPos + Random.insideUnitSphere * searchRadius;
                 searchPos.y = transform.position.y;
+                StandUpToStandPointWorldIfSitting();
                 agent.enabled = true; 
                 agent.SetDestination(searchPos);
                 SetState(CustomerState.Searching);
@@ -447,6 +457,7 @@ namespace Ouiki.Restaurant
         protected override void StandAndLeave()
         {
             KillSitTween();
+            StandUpToStandPointWorldIfSitting();
             if (hasMorphed)
                 return;
 

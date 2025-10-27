@@ -50,6 +50,7 @@ namespace Ouiki.Restaurant
         [HideInInspector] public Vector3 exitPoint;
 
         private Tween _sitTween;
+        private Tween _standTween;
         private bool _isSittingInProgress = false;
         protected bool hasBecomeAngrySitting = false;
 
@@ -130,7 +131,8 @@ namespace Ouiki.Restaurant
             _isSittingInProgress = true;
             agent.ResetPath();
             agent.enabled = false; 
-            _sitTween?.Kill();
+            KillSitTween();
+            KillStandTween();
 
             Sequence sitSequence = DOTween.Sequence();
             sitSequence.Append(transform.DOMove(assignedSeat.SitPointWorld, 0.5f).SetEase(Ease.InOutSine));
@@ -171,8 +173,8 @@ namespace Ouiki.Restaurant
         /// </summary>
         protected virtual void BecomeImpatient()
         {
+            StandUpToStandPointWorldIfSitting();
             assignedSeat?.HideServiceIndicator();
-            SnapToStandPoint();
             SetState(CustomerState.Chasing);
             animationController.PlayRun();
             chaseTimer = chaseTime;
@@ -225,9 +227,10 @@ namespace Ouiki.Restaurant
 
         protected virtual void StandAndLeave()
         {
-            _sitTween?.Kill();
-            _sitTween = null;
-            agent.enabled = true; // Enable NavMeshAgent when getting up
+            StandUpToStandPointWorldIfSitting();
+            KillSitTween();
+            KillStandTween();
+            agent.enabled = true;
             SetState(CustomerState.Leaving);
             assignedSeat?.HideServiceIndicator();
             assignedSeat?.Release();
@@ -236,8 +239,8 @@ namespace Ouiki.Restaurant
 
         protected virtual void MarkLeft()
         {
-            _sitTween?.Kill();
-            _sitTween = null;
+            KillSitTween();
+            KillStandTween();
             SetState(CustomerState.Left);
             assignedSeat?.HideServiceIndicator();
             OnLeave?.Invoke(this);
@@ -246,13 +249,20 @@ namespace Ouiki.Restaurant
 
         protected virtual void OnDestroy()
         {
-            _sitTween?.Kill();
-            _sitTween = null;
+            KillSitTween();
+            KillStandTween();
         }
 
         public virtual void SetState(CustomerState newState)
         {
             if (state == newState) return;
+
+            // If leaving any "sit" state, always move to StandPointWorld first
+            if (IsSittingState(state) && !IsSittingState(newState))
+            {
+                StandUpToStandPointWorldIfSitting();
+            }
+
             state = newState;
 
             switch (state)
@@ -292,18 +302,62 @@ namespace Ouiki.Restaurant
             }
         }
 
+        protected bool IsSittingState(CustomerState checkState)
+        {
+            return checkState == CustomerState.Sitting ||
+                   checkState == CustomerState.Ordering ||
+                   checkState == CustomerState.Waiting ||
+                   checkState == CustomerState.AngrySitting ||
+                   checkState == CustomerState.Drinking ||
+                   checkState == CustomerState.Happy;
+        }
+
+        /// <summary>
+        /// If in any sitting state, move instantly to StandPointWorld (warp), kill tweens, enable agent.
+        /// </summary>
+        protected virtual void StandUpToStandPointWorldIfSitting()
+        {
+            if (IsSittingState(state) && assignedSeat != null)
+            {
+                KillSitTween();
+                KillStandTween();
+                agent.enabled = true;
+                transform.position = assignedSeat.StandPointWorld;
+                agent.Warp(assignedSeat.StandPointWorld);
+                transform.rotation = assignedSeat.StandRotationWorld;
+            }
+        }
+
+        protected void KillSitTween()
+        {
+            if (_sitTween != null && _sitTween.IsActive())
+            {
+                _sitTween.Kill();
+                _sitTween = null;
+            }
+        }
+
+        protected void KillStandTween()
+        {
+            if (_standTween != null && _standTween.IsActive())
+            {
+                _standTween.Kill();
+                _standTween = null;
+            }
+        }
+
         public virtual void FleeFromGhoul()
         {
             if (state == CustomerState.Left || state == CustomerState.Leaving || state == CustomerState.Fleeing || state == CustomerState.Chasing) return;
+            StandUpToStandPointWorldIfSitting();
+            KillSitTween();
+            KillStandTween();
             isFleeing = true;
-            _sitTween?.Kill();
-            _sitTween = null;
-            agent.enabled = true; // Enable NavMeshAgent before moving
+            agent.enabled = true;
             SetState(CustomerState.Fleeing);
             animationController.PlayRun();
             assignedSeat?.HideServiceIndicator();
             assignedSeat?.Release();
-            agent.enabled = true; 
             agent.speed = fleeSpeed;
             agent.stoppingDistance = 0.01f;
             agent.SetDestination(exitPoint); 
@@ -327,7 +381,10 @@ namespace Ouiki.Restaurant
             {
                 if (!agent.pathPending)
                 {
-                    agent.enabled = true; // Make sure agent is enabled before chasing
+                    StandUpToStandPointWorldIfSitting();
+                    KillSitTween();
+                    KillStandTween();
+                    agent.enabled = true;
                     agent.SetDestination(baristaTarget.position);
                     animationController.PlayRun();
                     lostPlayer = false;
@@ -338,16 +395,14 @@ namespace Ouiki.Restaurant
 
         protected virtual void SnapToStandPoint()
         {
-            if (assignedSeat != null)
-            {
-                transform.position = assignedSeat.StandPointWorld;
-                agent.Warp(assignedSeat.StandPointWorld);
-                transform.rotation = assignedSeat.SitRotationWorld;
-            }
+            StandUpToStandPointWorldIfSitting();
         }
 
         protected void BeginSearch()
         {
+            StandUpToStandPointWorldIfSitting();
+            KillSitTween();
+            KillStandTween();
             SetState(CustomerState.Searching);
             searchTimer = 0f;
             searchAttempts = 0;
@@ -388,6 +443,9 @@ namespace Ouiki.Restaurant
 
         protected virtual void HitBarista()
         {
+            StandUpToStandPointWorldIfSitting();
+            KillSitTween();
+            KillStandTween();
             if (hasHitBarista) return;
             hasHitBarista = true;
             baristaTarget?.GetComponent<PlayerInteractionController>()?.SendMessage("TakeDamage", SendMessageOptions.DontRequireReceiver);
