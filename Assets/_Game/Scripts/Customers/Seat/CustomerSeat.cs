@@ -19,8 +19,8 @@ namespace Ouiki.Restaurant
 
         private Transform _transform;
 
-        public Vector3 SitPointWorld => (_transform ??= transform).TransformPoint(sitPointOffset);
-        public Vector3 StandPointWorld => (_transform ??= transform).TransformPoint(standPointOffset);
+        public Vector3 SitPointWorld => this.transform.position + sitPointOffset;
+        public Vector3 StandPointWorld => this.transform.position + standPointOffset;
 
         public Quaternion SitRotationWorld => (_transform ??= transform).rotation * Quaternion.Euler(sitPointEuler);
         public Quaternion StandRotationWorld => (_transform ??= transform).rotation * Quaternion.Euler(standPointEuler);

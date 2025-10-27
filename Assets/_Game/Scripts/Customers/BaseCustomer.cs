@@ -10,7 +10,7 @@ namespace Ouiki.Restaurant
 {
     public enum CustomerState
     {
-        WalkingToSeat, Sitting, Ordering, Waiting,AngrySitting, Chasing, Drinking, Happy, Leaving, Left, Fleeing, Searching, none
+        WalkingToSeat, Sitting, Ordering, Waiting, AngrySitting, Chasing, Drinking, Happy, Leaving, Left, Fleeing, Searching, none
     }
 
     [RequireComponent(typeof(NavMeshAgent))]
@@ -117,8 +117,9 @@ namespace Ouiki.Restaurant
             assignedSeat.Reserve();
             agent.speed = walkSpeed;
             agent.stoppingDistance = 0.01f;
-            state = CustomerState.none; // force state change
+            state = CustomerState.none; 
             SetState(CustomerState.WalkingToSeat);
+            agent.enabled = true;
             agent.SetDestination(seat.StandPointWorld);
             _isSittingInProgress = false;
         }
@@ -128,6 +129,7 @@ namespace Ouiki.Restaurant
             if (_isSittingInProgress) return;
             _isSittingInProgress = true;
             agent.ResetPath();
+            agent.enabled = false; 
             _sitTween?.Kill();
 
             Sequence sitSequence = DOTween.Sequence();
@@ -225,6 +227,7 @@ namespace Ouiki.Restaurant
         {
             _sitTween?.Kill();
             _sitTween = null;
+            agent.enabled = true; // Enable NavMeshAgent when getting up
             SetState(CustomerState.Leaving);
             assignedSeat?.HideServiceIndicator();
             assignedSeat?.Release();
@@ -280,6 +283,7 @@ namespace Ouiki.Restaurant
                     animationController.PlayWalk();
                     break;
                 case CustomerState.Fleeing:
+                    agent.enabled = true; 
                     animationController.PlayRun();
                     break;
                 case CustomerState.Happy:
@@ -294,10 +298,12 @@ namespace Ouiki.Restaurant
             isFleeing = true;
             _sitTween?.Kill();
             _sitTween = null;
+            agent.enabled = true; // Enable NavMeshAgent before moving
             SetState(CustomerState.Fleeing);
             animationController.PlayRun();
             assignedSeat?.HideServiceIndicator();
             assignedSeat?.Release();
+            agent.enabled = true; 
             agent.speed = fleeSpeed;
             agent.stoppingDistance = 0.01f;
             agent.SetDestination(exitPoint); 
@@ -321,6 +327,7 @@ namespace Ouiki.Restaurant
             {
                 if (!agent.pathPending)
                 {
+                    agent.enabled = true; // Make sure agent is enabled before chasing
                     agent.SetDestination(baristaTarget.position);
                     animationController.PlayRun();
                     lostPlayer = false;
@@ -366,6 +373,7 @@ namespace Ouiki.Restaurant
                     NavMeshHit hit;
                     if (NavMesh.SamplePosition(searchPos, out hit, 1.2f, NavMesh.AllAreas))
                     {
+                        agent.enabled = true; 
                         agent.SetDestination(hit.position);
                         animationController.PlayAlert();
                         searchAttempts++;

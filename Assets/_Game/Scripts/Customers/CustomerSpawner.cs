@@ -26,7 +26,7 @@ namespace Ouiki.Restaurant
         private bool firstCustomerSpawned = false;
         private readonly List<BaseCustomer> activeCustomers = new List<BaseCustomer>();
         private int spawnPatternIndex = 0;
-        private readonly List<string> spawnPattern = new List<string> { "Human", "Human", "Ghoul" };
+        private readonly List<string> spawnPattern = new List<string> { "Human", "Human", "Ghoul", "Human", "Ghoul" };
         private bool ghoulActive = false;
 
         public IReadOnlyList<BaseCustomer> ActiveCustomers => activeCustomers;
@@ -69,11 +69,11 @@ namespace Ouiki.Restaurant
                 Debug.LogWarning("[CustomerSpawner] Max active customers reached.");
                 return;
             }
-            if (ghoulActive)
+            /* if (ghoulActive)
             {
                 Debug.LogWarning("[CustomerSpawner] Ghoul already active, skipping spawn.");
                 return;
-            }
+            } */
 
             CustomerSeat seat = GetRandomAvailableSeat();
             if (seat == null)
