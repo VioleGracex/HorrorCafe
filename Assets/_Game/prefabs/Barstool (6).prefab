@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed6adf52bbfc1ff4c90c8a7da2a8baee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ouiki.Restaurant.CustomerSeat
-  sitPointOffset: {x: 0, y: 1, z: 0}
+  sitPointOffset: {x: 0.15, y: 1.5, z: 0}
   standPointOffset: {x: -1, y: 0, z: 0}
   sitPointEuler: {x: 0, y: 90, z: 0}
   standPointEuler: {x: 0, y: 90, z: 0}
@@ -182,6 +182,18 @@ PrefabInstance:
     - target: {fileID: 1826966590761117007, guid: 23a50e1c1cfc1e048ae396e30132335e, type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5402795181787937990, guid: 23a50e1c1cfc1e048ae396e30132335e, type: 3}
+      propertyPath: m_Size.x
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5402795181787937990, guid: 23a50e1c1cfc1e048ae396e30132335e, type: 3}
+      propertyPath: m_Size.y
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5402795181787937990, guid: 23a50e1c1cfc1e048ae396e30132335e, type: 3}
+      propertyPath: m_Size.z
+      value: 1.2
       objectReference: {fileID: 0}
     - target: {fileID: 5402795181787937990, guid: 23a50e1c1cfc1e048ae396e30132335e, type: 3}
       propertyPath: m_IsTrigger

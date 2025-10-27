@@ -27,7 +27,7 @@ namespace Ouiki.FPS
         [Header("Head Bob")]
         public bool enableHeadBob = true;
         public float bobSpeed = 10f;
-        public Vector3 bobAmount = new Vector3(.05f, .025f, 0f); // Reduced for comfort
+        public Vector3 bobAmount = new Vector3(.05f, .025f, 0f);
 
         private PlayerManager manager;
         private PlayerInputHandler input;
@@ -79,18 +79,19 @@ namespace Ouiki.FPS
                 }
             }
 
-            HandleLook();
+            if (!Cursor.visible)
+                HandleLook();
+
             HandleZoom();
 
             if (enableHeadBob && !_cameraOnNeck)
-                HeadBob(); // Only apply headbob when camera is on stable anchor
+                HeadBob(); 
         }
 
         void HandleLook()
         {
             if (state != null && !state.CanDo(PlayerAction.Move)) return;
-            if (Cursor.visible) return;
-            if (_cameraOnNeck) return; // Don't apply look when camera is parented to neck
+            if (_cameraOnNeck) return; 
 
             yaw += input.Look.Value.x * mouseSensitivity;
             pitch += (invertY ? input.Look.Value.y : -input.Look.Value.y) * mouseSensitivity;

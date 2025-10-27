@@ -10,7 +10,7 @@ namespace Ouiki.Restaurant
 {
     public enum CustomerState
     {
-        WalkingToSeat, Sitting, Ordering, Waiting, Angry, Chasing, Drinking, Happy, Leaving, Left, Fleeing, Searching, none
+        WalkingToSeat, Sitting, Ordering, Waiting, Angry, AngrySitting, Chasing, Drinking, Happy, Leaving, Left, Fleeing, Searching, none
     }
 
     [RequireComponent(typeof(NavMeshAgent))]
@@ -37,6 +37,7 @@ namespace Ouiki.Restaurant
 
         [Header("Vision/Detection")]
         public float visionRadius = 12f;
+        public float visionFOV = 90f; // New: field of view angle for cone, in degrees
         public float searchRadius = 4f;
         public float searchTime = 4f;
         public int maxSearchAttempts = 5;
@@ -50,6 +51,9 @@ namespace Ouiki.Restaurant
 
         private Tween _sitTween;
         private bool _isSittingInProgress = false;
+
+        // === ANGRY SITTING LOGIC ===
+        protected bool hasBecomeAngrySitting = false;
 
         public event Action<BaseCustomer> OnLeave;
 
@@ -82,10 +86,22 @@ namespace Ouiki.Restaurant
                 case CustomerState.Ordering:
                 case CustomerState.Waiting:
                     patienceRemaining -= Time.deltaTime;
+
+                    // --- Angry Sitting logic here ---
+                    if (!hasBecomeAngrySitting && patienceRemaining <= patienceTime * 0.5f && patienceRemaining > 0f && !isDrinking)
+                    {
+                        BecomeAngrySitting();
+                    }
+
                     if (patienceRemaining <= 0f && !isDrinking)
                         BecomeImpatient();
                     else
                         CheckForServedCoffee();
+                    break;
+                case CustomerState.AngrySitting:
+                    patienceRemaining -= Time.deltaTime;
+                    if (patienceRemaining <= 0f && !isDrinking)
+                        BecomeImpatient();
                     break;
                 case CustomerState.Leaving:
                 case CustomerState.Fleeing:
@@ -136,11 +152,29 @@ namespace Ouiki.Restaurant
             SetState(CustomerState.Ordering);
             patienceRemaining = patienceTime;
             assignedSeat?.ShowServiceIndicator();
+            hasBecomeAngrySitting = false;
         }
 
+        /// <summary>
+        /// Called when patience reaches half but not zero: sit mad, but don't chase yet
+        /// </summary>
+        protected virtual void BecomeAngrySitting()
+        {
+            SetState(CustomerState.AngrySitting);
+            animationController.PlaySitMad();
+            hasBecomeAngrySitting = true;
+        }
+
+        /// <summary>
+        /// Called when patience runs out completely: stand up and chase
+        /// </summary>
         protected virtual void BecomeImpatient()
         {
+            assignedSeat?.HideServiceIndicator();
+            SnapToStandPoint();
             SetState(CustomerState.Angry);
+            animationController.PlayRun(); // For default, use run for angry (override in HumanCustomer)
+            chaseTimer = chaseTime;
         }
 
         protected virtual void CheckForServedCoffee()
@@ -156,7 +190,7 @@ namespace Ouiki.Restaurant
 
         public virtual void ServeCoffee(CupItem cup)
         {
-            if (state != CustomerState.Ordering && state != CustomerState.Waiting) return;
+            if (state != CustomerState.Ordering && state != CustomerState.Waiting && state != CustomerState.AngrySitting) return;
             coffeeServed = true;
             isDrinking = true;
             cup.SetInteractable(false);
@@ -212,7 +246,7 @@ namespace Ouiki.Restaurant
             _sitTween = null;
         }
 
-        protected virtual void SetState(CustomerState newState)
+        public virtual void SetState(CustomerState newState)
         {
             if (state == newState) return;
             state = newState;
@@ -229,8 +263,11 @@ namespace Ouiki.Restaurant
                 case CustomerState.Waiting:
                     animationController.PlaySitIdle();
                     break;
-                case CustomerState.Angry:
+                case CustomerState.AngrySitting:
                     animationController.PlaySitMad();
+                    break;
+                case CustomerState.Angry:
+                    animationController.PlayRun(); // Default angry is now chase, can override in subclasses
                     break;
                 case CustomerState.Chasing:
                     animationController.PlayRun();
@@ -255,7 +292,7 @@ namespace Ouiki.Restaurant
 
         public virtual void FleeFromGhoul()
         {
-            if (state == CustomerState.Left || state == CustomerState.Leaving || state == CustomerState.Fleeing || state == CustomerState.Chasing || state == CustomerState.Angry) return;
+            if (state == CustomerState.Left || state == CustomerState.Leaving || state == CustomerState.Fleeing || state == CustomerState.Chasing || state == CustomerState.Angry || state == CustomerState.AngrySitting) return;
             isFleeing = true;
             _sitTween?.Kill();
             _sitTween = null;
@@ -353,9 +390,44 @@ namespace Ouiki.Restaurant
 #if UNITY_EDITOR
         protected virtual void OnDrawGizmosSelected()
         {
-            Gizmos.color = new Color(1f, 0.8f, 0.2f, 0.16f);
-            Gizmos.DrawWireSphere(transform.position, visionRadius);
+            // Draw vision cone from head
+            Transform head = null;
+            Animator anim = (animationController != null) ? animationController.CurrentAnimator : null;
+            if (anim != null && anim.isHuman)
+                head = anim.GetBoneTransform(HumanBodyBones.Head);
 
+            if (head == null)
+                head = this.transform; // fallback
+
+            float fovAngle = visionFOV;
+            float fovRange = visionRadius;
+            int segments = 32;
+            Vector3 headPos = head.position;
+            Vector3 forward = head.forward;
+
+            // Draw cone lines
+            Gizmos.color = new Color(1f, 0.8f, 0.2f, 0.38f);
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = -fovAngle / 2 + (fovAngle * i / segments);
+                Quaternion rot = Quaternion.AngleAxis(angle, head.up);
+                Vector3 dir = rot * forward;
+                Gizmos.DrawLine(headPos, headPos + dir * fovRange);
+            }
+
+            // Draw arc between cone lines
+            Vector3 prevPoint = Vector3.zero;
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = -fovAngle / 2 + (fovAngle * i / segments);
+                Quaternion rot = Quaternion.AngleAxis(angle, head.up);
+                Vector3 dir = rot * forward;
+                Vector3 point = headPos + dir * fovRange;
+                if (i > 0) Gizmos.DrawLine(prevPoint, point);
+                prevPoint = point;
+            }
+
+            // Draw search radius as transparent blue sphere
             Gizmos.color = new Color(0.4f, 0.9f, 1f, 0.14f);
             Gizmos.DrawWireSphere(transform.position, searchRadius);
         }

@@ -22,14 +22,13 @@ namespace Ouiki.Restaurant
 
         [Header("Grab/Jump Scare")]
         public float grabDuration = 0.65f;
-        public float faceToCameraDistance = 0.4f;
         public float holdPlayerDuration = 1.2f;
 
         [Header("Scream Settings")]
         public AudioSource screamAudioSource;   
         public AudioClip screamClip;              
 
-        private bool hasMorphed = false;
+        public bool hasMorphed = false;
         private float morphTimer = 0f;
         private float lastShoutTime = -999f;
         private bool isTaunting = false;
@@ -38,10 +37,16 @@ namespace Ouiki.Restaurant
         private bool hasGrabbedPlayer = false;
         private Transform rightHandIK; 
 
+        [Header("Grabbed Player Body Rotation")]
+        public Vector3 playerGrabbedLocalEulerAngles = new Vector3(0f, 0f, 0f);
+
+        [Header("Grabbed Player Arm Offset")]
+        public Vector3 playerGrabbedArmOffset = Vector3.zero;
+
         protected override void Start()
         {
             base.Start();
-            SwitchToHumanForm();
+            //SwitchToHumanForm();
         }
 
         protected override void Update()
@@ -86,7 +91,7 @@ namespace Ouiki.Restaurant
             hasMorphed = false;
         }
 
-        void SwitchToMonsterForm()
+        public void SwitchToMonsterForm()
         {
             if (humanFormGO) humanFormGO.SetActive(false);
             if (monsterFormGO) monsterFormGO.SetActive(true);
@@ -115,9 +120,10 @@ namespace Ouiki.Restaurant
             Invoke(nameof(BeginChase), 1.5f);
         }
 
-        void BeginChase()
+        public void BeginChase()
         {
             SetState(CustomerState.Chasing);
+            MusicManager.Instance?.PlayChaseMusic();
             isTaunting = false;
             animationController?.PlayAlert();
             if (baristaTarget)
@@ -256,12 +262,11 @@ namespace Ouiki.Restaurant
         {
             if (hasGrabbedPlayer) return;
 
-            // Check by tag if this is the player (instead of relying on component)
+            // Confirm it's the player by tag (must set "Player" tag on player GameObject)
             if (baristaTarget != null && baristaTarget.CompareTag("Player"))
             {
                 hasGrabbedPlayer = true;
-                // Get the PlayerInteractionController (should be on the player object)
-                var player = baristaTarget.GetComponent<PlayerStateManager>();
+                var player = baristaTarget.GetComponent<PlayerInteractionController>();
                 if (player != null)
                 {
                     StartCoroutine(GrabSequence(player));
@@ -269,7 +274,7 @@ namespace Ouiki.Restaurant
             }
         }
 
-        private IEnumerator GrabSequence(PlayerStateManager player)
+        private IEnumerator GrabSequence(PlayerInteractionController player)
         {
             animationController.PlayGrab();
 
@@ -279,10 +284,26 @@ namespace Ouiki.Restaurant
                 rightHandIK = monsterAnimator.GetBoneTransform(HumanBodyBones.RightHand);
             }
 
-            if (player != null)
-                player.GetGrabbed();
+            // Snap player to right hand position for the grab, set local rotation and offset
+            if (rightHandIK != null)
+            {
+                player.transform.SetParent(rightHandIK);
+                player.transform.localPosition = playerGrabbedArmOffset;
+                player.transform.localRotation = Quaternion.Euler(playerGrabbedLocalEulerAngles);
+            }
+
+            if (player.stateManager != null)
+                player.stateManager.GetGrabbed();
 
             yield return new WaitForSeconds(grabDuration + holdPlayerDuration);
+
+            // === KILL PLAYER HERE ===
+            if (player.stateManager != null)
+                player.stateManager.Die();
+
+            // Optional: Detach the player from hand after
+            if (player.transform.parent == rightHandIK)
+                player.transform.SetParent(null);
 
             StartCoroutine(GhoulScreamLoop());
         }
@@ -296,7 +317,7 @@ namespace Ouiki.Restaurant
             }
         }
 
-        private void PlayScream()
+        public void PlayScream()
         {
             animationController?.PlayScream();
             if (screamAudioSource != null && screamClip != null)

@@ -15,12 +15,15 @@ namespace Ouiki.Restaurant
         [Header("Seats and Spawning")]
         public CustomerSeat[] seats;
         public float spawnInterval = 8f;
+        [Tooltip("Delay before spawning the very first customer (seconds).")]
+        public float firstCustomerDelay = 0f;
         public int maxActiveCustomers = 3;
         public Vector3 spawnAreaMin = new Vector3(-10, 0, -10);
         public Vector3 spawnAreaMax = new Vector3(-5, 0, 5);
         public Vector3 spawnAreaOffset = Vector3.zero;
 
         private float timer = 0f;
+        private bool firstCustomerSpawned = false;
         private readonly Queue<BaseCustomer> customerPool = new Queue<BaseCustomer>();
         private readonly List<BaseCustomer> activeCustomers = new List<BaseCustomer>();
         private int spawnPatternIndex = 0;
@@ -31,18 +34,30 @@ namespace Ouiki.Restaurant
 
         void Start()
         {
-            // Spawn immediately on start
-            TrySpawnCustomer();
             timer = 0f;
+            firstCustomerSpawned = false;
         }
 
         void Update()
         {
             timer += Time.deltaTime;
-            if (timer >= spawnInterval)
+
+            if (!firstCustomerSpawned)
             {
-                TrySpawnCustomer();
-                timer = 0f;
+                if (timer >= firstCustomerDelay)
+                {
+                    TrySpawnCustomer();
+                    timer = 0f;
+                    firstCustomerSpawned = true;
+                }
+            }
+            else
+            {
+                if (timer >= spawnInterval)
+                {
+                    TrySpawnCustomer();
+                    timer = 0f;
+                }
             }
         }
 

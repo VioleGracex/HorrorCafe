@@ -1,5 +1,6 @@
-using UnityEngine;
+using Ouiki.UI;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Ouiki.FPS
 {
@@ -24,7 +25,7 @@ namespace Ouiki.FPS
         Hiding,
         Pushing,
         Dead,
-        Grabbed 
+        Grabbed
     }
 
     public class PlayerCapabilities
@@ -141,13 +142,13 @@ namespace Ouiki.FPS
                 CanHide = false,
                 CanPush = false
             },
-            [PlayerState.Grabbed] = new PlayerCapabilities 
+            [PlayerState.Grabbed] = new PlayerCapabilities
             {
-                CanMove = false,  
+                CanMove = false,
                 CanJump = false,
                 CanCrouch = false,
                 CanSprint = false,
-                CanZoom = true,   
+                CanZoom = true,
                 CanHide = false,
                 CanPush = false
             }
@@ -178,7 +179,16 @@ namespace Ouiki.FPS
 
         public void KnockOut() => SetState(PlayerState.KnockedOut);
         public void Recover() => SetState(PlayerState.Standing);
-        public void Die() => SetState(PlayerState.Dead);
+
+        public void Die()
+        {
+            SetState(PlayerState.Dead);
+            MusicManager.Instance?.StopChaseMusic();
+            // Show Game Over UI
+            if (GameOverCanvasManager.Instance != null)
+                GameOverCanvasManager.Instance.ShowGameOver("You Died!");
+        }
+
         public void GetGrabbed() => SetState(PlayerState.Grabbed);
         public void StartHide() => SetState(PlayerState.Hiding);
         public void StopHide() => SetState(PlayerState.Standing);
@@ -219,6 +229,7 @@ namespace Ouiki.FPS
 
         public void SetState(PlayerState newState)
         {
+            if (CurrentState == PlayerState.Dead) return;
             CurrentState = newState;
             if (animationController != null)
             {

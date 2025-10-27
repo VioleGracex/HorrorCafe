@@ -15,13 +15,13 @@ namespace Ouiki.FPS
 
         private void Awake()
         {
-            inputHandler.Init();
-            stateManager.SetState(PlayerState.Standing);
-            cooldownManager.Init();
-            movementController.Init(this);
-            cameraController.Init(this);
+            inputHandler?.Init();
+            stateManager?.SetState(PlayerState.Standing);
+            cooldownManager?.Init();
+            movementController?.Init(this);
+            cameraController?.Init(this);
             interactionController.inputHandler = inputHandler;
-            uiController.Init(this);
+            uiController?.Init(this);
         }
     }
 }
